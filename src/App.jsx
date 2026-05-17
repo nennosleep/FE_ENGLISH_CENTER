@@ -1,9 +1,10 @@
 import React from 'react';
-import CourseListPage from './features/scheduling/pages/CourseListPage';
+import { RouterProvider } from 'react-router-dom';
+import router from "./routes/routers"; // Import cấu trúc router mà bạn đã xây dựng
 
 function App() {
   return (
-    <CourseListPage />
+    <RouterProvider router={router} />
   );
 }
 
