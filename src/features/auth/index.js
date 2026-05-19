@@ -9,6 +9,12 @@ export { default as ForgotPasswordPage } from './pages/ForgotPasswordPage';
 export { default as OtpVerifyPage }      from './pages/OtpVerifyPage';
 export { default as ResetPasswordPage }  from './pages/ResetPasswordPage';
 
+// Components
+export { default as PrivateRoute }       from './components/PrivateRoute';
+
+// Context
+export { AuthProvider, useAuthContext }  from './context/AuthContext';
+
 // Hooks
 export { useAuth } from './hooks/useAuth';
 
@@ -19,3 +25,4 @@ export {
   verifyOtpApi,
   resetPasswordApi,
 } from './services/authService';
+

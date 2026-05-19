@@ -1,22 +1,17 @@
 import React from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from '../features/auth/hooks/useAuth';
 import {
   LayoutDashboard,
   BookOpen,
   CalendarDays,
   SlidersHorizontal,
   LogOut,
-  UserCheck
-} from "lucide-react"; // Sử dụng lucide-react để làm icon, bạn có thể thay bằng icon khác nếu muốn
+  UserCheck,
+} from "lucide-react";
 
 export default function AdminLayout() {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    // Xử lý logic xóa token/hành động đăng xuất ở đây
-    console.log("Đăng xuất thành công");
-    navigate("/auth/login");
-  };
+  const { logout, user } = useAuth();
 
   // Danh sách các menu điều hướng ở Sidebar Admin
   const menuItems = [
@@ -89,7 +84,7 @@ export default function AdminLayout() {
         {/* Nút Đăng Xuất ở dưới cùng Sidebar */}
         <div className="p-4 border-t border-slate-800">
           <button
-            onClick={handleLogout}
+            onClick={logout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 transition-all duration-200 text-left"
           >
             <LogOut size={20} />

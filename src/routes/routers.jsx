@@ -1,4 +1,8 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import React from "react";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+
+// Auth
+import { AuthProvider, PrivateRoute } from "../features/auth";
 
 // Layouts
 import AdminLayout from "../layouts/adminLayout";
@@ -20,36 +24,90 @@ import CalendarSchedulerPage from "../features/scheduling/pages/CalendarSchedule
 // Teacher pages
 import TeacherListPage from "../features/teachers/pages/TeacherListPage";
 
+import { useAuthContext } from "../features/auth/context/AuthContext";
+import { useToast } from "../components/ui/Toast";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+
+/**
+ * Lắng nghe sự kiện 401 (hết hạn token) từ identityAxios
+ * để tự động đá người dùng ra trang đăng nhập và báo lỗi.
+ */
+function GlobalAuthListener() {
+  const { clearUser } = useAuthContext();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const toast = useToast();
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      clearUser(); // Xoá token và user info
+      toast.warning('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.');
+      
+      // Chuyển hướng về login nhưng nhớ lại trang hiện tại để có thể quay lại
+      navigate('/auth/login', { replace: true, state: { from: location } });
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, [clearUser, navigate, location, toast]);
+
+  return null;
+}
+
+/**
+ * Root wrapper: cung cấp AuthProvider cho toàn bộ cây router.
+ * Đặt ở đây thay vì main.jsx để AuthProvider nằm trong RouterProvider context.
+ */
+function RootLayout() {
+  return (
+    <AuthProvider>
+      <GlobalAuthListener />
+      <Outlet />
+    </AuthProvider>
+  );
+}
+
 const router = createBrowserRouter([
-  // "/" → chuyển về trang đăng nhập
   {
-    path: "/",
-    element: <Navigate to="/auth/login" replace />,
-  },
-
-  // ─── Auth routes ───────────────────────────────────────────
-  {
-    path: "/auth",
-    element: <AuthLayout />,
+    // Root layout bọc toàn bộ app — cung cấp AuthContext
+    element: <RootLayout />,
     children: [
-      { index: true, element: <Navigate to="login" replace /> },
-      { path: "login", element: <LoginPage /> },
-      { path: "forgot-password", element: <ForgotPasswordPage /> },
-      { path: "verify-otp", element: <OtpVerifyPage /> },
-      { path: "reset-password", element: <ResetPasswordPage /> },
-    ],
-  },
+      // "/" → chuyển về trang đăng nhập
+      {
+        path: "/",
+        element: <Navigate to="/auth/login" replace />,
+      },
 
-  // ─── Admin routes ──────────────────────────────────────────
-  {
-    path: "/admin",
-    element: <AdminLayout />,
-    children: [
-      { index: true, element: <Navigate to="courses" replace /> },
-      { path: "courses", element: <CourseListPage /> },
-      { path: "class-setup", element: <ClassSetupPage /> },
-      { path: "scheduler", element: <CalendarSchedulerPage /> },
-      { path: "teachers", element: <TeacherListPage /> },
+      // ─── Auth routes ───────────────────────────────────────────
+      {
+        path: "/auth",
+        element: <AuthLayout />,
+        children: [
+          { index: true, element: <Navigate to="login" replace /> },
+          { path: "login",           element: <LoginPage /> },
+          { path: "forgot-password", element: <ForgotPasswordPage /> },
+          { path: "verify-otp",      element: <OtpVerifyPage /> },
+          { path: "reset-password",  element: <ResetPasswordPage /> },
+        ],
+      },
+
+      // ─── Admin routes (được bảo vệ bởi PrivateRoute) ──────────
+      {
+        path: "/admin",
+        element: (
+          <PrivateRoute>
+            <AdminLayout />
+          </PrivateRoute>
+        ),
+        children: [
+          { index: true,              element: <Navigate to="courses" replace /> },
+          { path: "courses",          element: <CourseListPage /> },
+          { path: "class-setup",      element: <ClassSetupPage /> },
+          { path: "scheduler",        element: <CalendarSchedulerPage /> },
+          { path: "teachers",         element: <TeacherListPage /> },
+        ],
+      },
     ],
   },
 ]);

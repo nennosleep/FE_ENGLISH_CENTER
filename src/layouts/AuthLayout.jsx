@@ -1,10 +1,18 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuthContext } from '../features/auth/context/AuthContext';
 
 /**
  * AuthLayout — Khung bố cục cho tất cả các trang xác thực.
  */
 export default function AuthLayout() {
+  const { isAuthenticated } = useAuthContext();
+
+  // Nếu đã đăng nhập mà lại truy cập vào /auth/login hoặc / -> Chuyển thẳng vào admin
+  if (isAuthenticated) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 py-6"
       style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1b3392 55%, #2563eb 100%)' }}
