@@ -30,3 +30,4 @@ export const getRoomUtilization = async (roomId, weekStartDate) => {
   // Trả về thẳng object RoomUtilizationResponse (gồm longTermClasses, weeklySessions, utilizationRate,...)
   return response.data.data;
 };
+
