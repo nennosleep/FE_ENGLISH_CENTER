@@ -1,46 +1,110 @@
 import schedulingAxios from '../config/identityAxios';
 
 /**
- * Lấy danh sách toàn bộ giáo viên từ hệ thống
- * @returns {Promise<Array>} Danh sách giáo viên
+ * Lấy toàn bộ giáo viên
  */
 export const getAllTeachers = async () => {
-  const response = await schedulingAxios.get('/teachers'); // Thay đổi endpoint cho đúng với BE nếu cần
-  console.log("All Teachers:", response.data);
+  const response = await schedulingAxios.get('/teachers');
+  return response.data.data || [];
+};
+
+/**
+ * Lấy danh sách giáo viên có phân trang / filter
+ * @param {object} params
+ */
+export const getTeachers = async (params = {}) => {
+  const response = await schedulingAxios.get('/teachers', { params });
   return response.data.data;
 };
 
 /**
- * Lấy danh sách giáo viên đang hoạt động (ACTIVE) để phân công vào lớp mới
- * @returns {Promise<Array>} Danh sách giáo viên ACTIVE
+ * Lấy giáo viên ACTIVE
  */
 export const getActiveTeachers = async () => {
   try {
     const response = await schedulingAxios.get('/teachers');
     const allTeachers = response.data.data || [];
-    
-    // Lọc chỉ lấy những giáo viên có status là ACTIVE
-    const activeTeachers = allTeachers.filter(teacher => teacher.status === 'ACTIVE');
-    
-    return activeTeachers;
+
+    return allTeachers.filter(
+      (teacher) => teacher.status === 'ACTIVE'
+    );
   } catch (error) {
-    console.error("Lỗi khi lấy danh sách giáo viên:", error);
+    console.error('Lỗi khi lấy danh sách giáo viên:', error);
     throw error;
   }
 };
 
 /**
- * BỔ SUNG MỚI: Lấy danh sách giáo viên ACTIVE theo chuyên môn của khóa học
- * @param {string} courseId - ID dạng UUID của khóa học được chọn
- * @returns {Promise<Array>} Danh sách giáo viên phù hợp chuyên môn
+ * Lấy giáo viên theo chuyên môn khóa học
+ * @param {string} courseId
  */
 export const getTeachersByCourse = async (courseId) => {
   try {
-    // Gọi đúng đến endpoint riêng biệt vừa bổ sung ở Backend kèm theo query parameter
-    const response = await schedulingAxios.get(`/teachers/active-by-course?courseId=${courseId}`);
+    const response = await schedulingAxios.get(
+      `/teachers/active-by-course?courseId=${courseId}`
+    );
+
     return response.data.data || [];
   } catch (error) {
-    console.error(`Lỗi khi lấy danh sách giáo viên theo courseId ${courseId}:`, error);
+    console.error(
+      `Lỗi khi lấy danh sách giáo viên theo courseId ${courseId}:`,
+      error
+    );
     throw error;
   }
+};
+
+/**
+ * Lấy chi tiết 1 giáo viên
+ * @param {string} id
+ */
+export const getTeacherById = async (id) => {
+  const response = await schedulingAxios.get(`/teachers/${id}`);
+  return response.data.data;
+};
+
+/**
+ * Tạo giáo viên mới
+ * @param {object} payload
+ */
+export const createTeacher = async (payload) => {
+  const response = await schedulingAxios.post('/teachers', payload);
+  return response.data;
+};
+
+/**
+ * Cập nhật giáo viên
+ * @param {string} id
+ * @param {object} payload
+ */
+export const updateTeacher = async (id, payload) => {
+  const response = await schedulingAxios.put(
+    `/teachers/${id}`,
+    payload
+  );
+
+  return response.data;
+};
+
+/**
+ * Cập nhật trạng thái giáo viên
+ * @param {string} id
+ * @param {string} status
+ */
+export const updateTeacherStatus = async (id, status) => {
+  const response = await schedulingAxios.patch(
+    `/teachers/${id}/status`,
+    { status }
+  );
+
+  return response.data;
+};
+
+/**
+ * Xóa giáo viên
+ * @param {string} id
+ */
+export const deleteTeacher = async (id) => {
+  const response = await schedulingAxios.delete(`/teachers/${id}`);
+  return response.data;
 };
