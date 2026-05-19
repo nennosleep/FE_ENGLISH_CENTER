@@ -1,10 +1,13 @@
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
-import router from "./routes/routers"; // Import cấu trúc router mà bạn đã xây dựng
+import router from './routes/routers';
+import { ToastProvider } from './components/ui/Toast';
 
 function App() {
   return (
-    <RouterProvider router={router} />
+    <ToastProvider>
+      <RouterProvider router={router} />
+    </ToastProvider>
   );
 }
 
