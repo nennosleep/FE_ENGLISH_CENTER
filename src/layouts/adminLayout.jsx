@@ -6,8 +6,9 @@ import {
   CalendarDays,
   SlidersHorizontal,
   LogOut,
-  UserCheck
-} from "lucide-react"; // Sử dụng lucide-react để làm icon, bạn có thể thay bằng icon khác nếu muốn
+  UserCheck,
+  GraduationCap // Import thêm icon phù hợp cho Lớp học
+} from "lucide-react";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function AdminLayout() {
     navigate("/auth/login");
   };
 
-  // Danh sách các menu điều hướng ở Sidebar Admin
+  // Danh sách các menu điều hướng ở Sidebar Admin (ĐÃ CẬP NHẬT)
   const menuItems = [
     {
       path: "/admin",
@@ -30,6 +31,11 @@ export default function AdminLayout() {
       path: "/admin/courses",
       name: "Quản lý khóa học",
       icon: <BookOpen size={20} />
+    },
+    {
+      path: "/admin/classes", // 🔹 ĐƯỜNG DẪN ĐẾN TRANG CLASS LIST PAGE MỚI TẠO
+      name: "Quản lý lớp học",
+      icon: <GraduationCap size={20} />
     },
     {
       path: "/admin/class-setup",
@@ -121,7 +127,7 @@ export default function AdminLayout() {
           </div>
         </header>
 
-        {/* 🔹 NƠI HIỂN THỊ NỘI DUNG CÁC TRANG CON (Courses, Class Setup, Scheduler,...) */}
+        {/* NƠI HIỂN THỊ NỘI DUNG CÁC TRANG CON */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
           <Outlet />
         </main>
