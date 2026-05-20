@@ -1,6 +1,5 @@
 import React from "react";
-import { NavLink, Outlet } from "react-router-dom";
-import { useAuth } from '../features/auth/hooks/useAuth';
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
@@ -8,12 +7,20 @@ import {
   SlidersHorizontal,
   LogOut,
   UserCheck,
+  GraduationCap // Import thêm icon phù hợp cho Lớp học
 } from "lucide-react";
+import { useAuthContext } from "../features/auth/context/AuthContext";
 
 export default function AdminLayout() {
-  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+  const { clearUser } = useAuthContext();
 
-  // Danh sách các menu điều hướng ở Sidebar Admin
+  const handleLogout = () => {
+    clearUser(); // Xóa token và user khỏi state/storage
+    navigate("/auth/login");
+  };
+
+  // Danh sách các menu điều hướng ở Sidebar Admin (ĐÃ CẬP NHẬT)
   const menuItems = [
     {
       path: "/admin",
@@ -25,6 +32,11 @@ export default function AdminLayout() {
       path: "/admin/courses",
       name: "Quản lý khóa học",
       icon: <BookOpen size={20} />
+    },
+    {
+      path: "/admin/classes", // 🔹 ĐƯỜNG DẪN ĐẾN TRANG CLASS LIST PAGE MỚI TẠO
+      name: "Quản lý lớp học",
+      icon: <GraduationCap size={20} />
     },
     {
       path: "/admin/class-setup",
@@ -84,7 +96,7 @@ export default function AdminLayout() {
         {/* Nút Đăng Xuất ở dưới cùng Sidebar */}
         <div className="p-4 border-t border-slate-800">
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 transition-all duration-200 text-left"
           >
             <LogOut size={20} />
@@ -116,7 +128,7 @@ export default function AdminLayout() {
           </div>
         </header>
 
-        {/* 🔹 NƠI HIỂN THỊ NỘI DUNG CÁC TRANG CON (Courses, Class Setup, Scheduler,...) */}
+        {/* NƠI HIỂN THỊ NỘI DUNG CÁC TRANG CON */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
           <Outlet />
         </main>
