@@ -7,7 +7,8 @@ import {
   SlidersHorizontal,
   LogOut,
   UserCheck,
-  GraduationCap // Import thêm icon phù hợp cho Lớp học
+  GraduationCap,
+  Award // 🔹 Import thêm icon đại diện cho Chuyên môn (Specialization)
 } from "lucide-react";
 import { useAuthContext } from "../features/auth/context/AuthContext";
 
@@ -20,7 +21,7 @@ export default function AdminLayout() {
     navigate("/auth/login");
   };
 
-  // Danh sách các menu điều hướng ở Sidebar Admin (ĐÃ CẬP NHẬT)
+  // Danh sách các menu điều hướng ở Sidebar Admin (ĐÃ THÊM MỤC CHUYÊN MÔN)
   const menuItems = [
     {
       path: "/admin",
@@ -34,7 +35,7 @@ export default function AdminLayout() {
       icon: <BookOpen size={20} />
     },
     {
-      path: "/admin/classes", // 🔹 ĐƯỜNG DẪN ĐẾN TRANG CLASS LIST PAGE MỚI TẠO
+      path: "/admin/classes", 
       name: "Quản lý lớp học",
       icon: <GraduationCap size={20} />
     },
@@ -47,6 +48,11 @@ export default function AdminLayout() {
       path: "/admin/scheduler",
       name: "Điều hành lịch dạy",
       icon: <CalendarDays size={20} />
+    },
+    {
+      path: "/admin/specializations", // 🔹 ĐƯỜNG DẪN ĐẾN TRANG QUẢN LÝ CHUYÊN MÔN MỚI
+      name: "Danh mục chuyên môn",
+      icon: <Award size={20} />
     },
     {
       path: "/admin/teachers",
