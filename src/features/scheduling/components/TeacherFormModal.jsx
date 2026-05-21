@@ -12,7 +12,8 @@ import {
 const STATUS_OPTIONS = [
   { value: 'ACTIVE',   label: 'Đang hoạt động' },
   { value: 'ON_LEAVE',  label: 'Nghỉ phép' },
-  { value: 'INACTIVE', label: 'Ngừng hoạt động' },
+  { value: 'INACTIVE', label: 'Đình chỉ / Ngừng HĐ' },
+  { value: 'RESIGNED', label: 'Đã thôi việc' },
 ];
 
 /* ─── Giả lập danh sách chuyên môn số lượng lớn để test ─── */
@@ -34,6 +35,7 @@ const MOCK_SPECIALIZATIONS = [
 
 const EMPTY_FORM = {
   teacherCode:    '',
+  email:          '', // Thêm trường email
   fullName:       '',
   phone:          '',
   status:         'ACTIVE',
@@ -50,9 +52,10 @@ export default function TeacherFormModal({
   open,
   onClose,
   onSubmit,
-  initialData = null,   // null → Thêm mới | object → Chỉnh sửa
-  specializations = [], // Nếu trang cha truyền vào thì dùng, nếu trống sẽ dùng MOCK_SPECIALIZATIONS ở trên
+  initialData = null,   // null → Thêm mới | object → Chỉnh sửa/Xem
+  specializations = [], 
   loading = false,
+  isViewMode = false,   // Cờ xác định chế độ Chỉ xem
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
 
@@ -65,6 +68,7 @@ export default function TeacherFormModal({
       if (initialData) {
         setForm({
           teacherCode:    initialData.teacherCode    ?? '',
+          email:          initialData.email          ?? '', // Gắn email nếu BE có trả về
           fullName:       initialData.fullName       ?? '',
           phone:          initialData.phone          ?? '',
           status:         initialData.status         ?? 'ACTIVE',
@@ -101,7 +105,7 @@ export default function TeacherFormModal({
 
   const handleSubmitForm = (e) => {
     if (e) e.preventDefault();
-    if (!form.fullName?.trim()) return;
+    if (!form.fullName?.trim() || (!initialData && !form.email?.trim())) return; // Thêm mới bắt buộc email
     onSubmit(form);
   };
 
@@ -119,7 +123,9 @@ export default function TeacherFormModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-bold text-slate-800">
-            {initialData ? 'Chỉnh sửa giảng viên' : 'Thêm giảng viên mới'}
+            {isViewMode 
+              ? 'Chi tiết giảng viên' 
+              : initialData ? 'Chỉnh sửa giảng viên' : 'Thêm giảng viên mới'}
           </h2>
           <button
             type="button"
@@ -133,22 +139,8 @@ export default function TeacherFormModal({
         {/* Body Form */}
         <form onSubmit={handleSubmitForm} className="flex-1 p-6 space-y-4 overflow-y-auto">
 
-          {/* Mã GV + Họ tên */}
+          {/* Hàng 1: Họ tên + Số điện thoại */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-slate-600">
-                <Hash size={15} /> Mã giảng viên
-              </label>
-              <input
-                type="text"
-                placeholder="Hệ thống tự sinh nếu trống"
-                value={form.teacherCode}
-                onChange={handleChange('teacherCode')}
-                disabled={!!initialData}
-                className={inputCls}
-              />
-            </div>
-
             <div className="flex flex-col gap-1.5">
               <label className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-slate-600">
                 <User size={15} /> Họ và tên <span className="text-rose-500">*</span>
@@ -159,13 +151,11 @@ export default function TeacherFormModal({
                 value={form.fullName}
                 onChange={handleChange('fullName')}
                 required
-                className={inputCls}
+                disabled={isViewMode}
+                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''}`}
               />
             </div>
-          </div>
-
-          {/* Số điện thoại + Trạng thái */}
-          <div className="grid grid-cols-2 gap-4">
+            
             <div className="flex flex-col gap-1.5">
               <label className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-slate-600">
                 <Phone size={15} /> Số điện thoại
@@ -175,7 +165,26 @@ export default function TeacherFormModal({
                 placeholder="0901 234 567"
                 value={form.phone}
                 onChange={handleChange('phone')}
-                className={inputCls}
+                disabled={isViewMode}
+                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''}`}
+              />
+            </div>
+          </div>
+
+          {/* Hàng 2: Email + Trạng thái */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-slate-600">
+                Email (Tài khoản) { !initialData && <span className="text-rose-500">*</span> }
+              </label>
+              <input
+                type="email"
+                placeholder="email@example.com"
+                value={form.email || ''}
+                onChange={handleChange('email')}
+                disabled={!!initialData || isViewMode} // Edit hoặc View đều không cho sửa email
+                required={!initialData}
+                className={`${inputCls} ${(!!initialData || isViewMode) ? 'bg-slate-100' : ''}`}
               />
             </div>
 
@@ -186,7 +195,8 @@ export default function TeacherFormModal({
               <select
                 value={form.status}
                 onChange={handleChange('status')}
-                className={inputCls}
+                disabled={!initialData || isViewMode} // Thêm mới hoặc View thì không cho sửa
+                className={`${inputCls} ${(!initialData || isViewMode) ? 'appearance-none bg-slate-100' : ''}`}
               >
                 {STATUS_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -197,7 +207,7 @@ export default function TeacherFormModal({
             </div>
           </div>
 
-          {/* Giới hạn lớp + giờ */}
+          {/* Hàng 3: Giới hạn lớp + Giới hạn giờ */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-slate-600">
@@ -209,7 +219,8 @@ export default function TeacherFormModal({
                 max={20}
                 value={form.maxClasses}
                 onChange={handleNumberChange('maxClasses')}
-                className={inputCls}
+                disabled={isViewMode}
+                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''}`}
               />
             </div>
 
@@ -223,12 +234,13 @@ export default function TeacherFormModal({
                 max={12}
                 value={form.maxHoursPerDay}
                 onChange={handleNumberChange('maxHoursPerDay')}
-                className={inputCls}
+                disabled={isViewMode}
+                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''}`}
               />
             </div>
           </div>
 
-          {/* Khu vực Chuyên môn số lượng lớn (Có cuộn dọc nội bộ) */}
+          {/* Khu vực Chuyên môn */}
           {displaySpecializations.length > 0 && (
             <div className="space-y-2 pt-1">
               <label className="flex items-center justify-between text-[0.8rem] font-semibold text-slate-600">
@@ -240,7 +252,6 @@ export default function TeacherFormModal({
                 </span>
               </label>
               
-              {/* Vùng chứa thiết lập max-h-[140px] để khi vượt quá 3 dòng nút sẽ tự động xuất hiện thanh cuộn mượt mà */}
               <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-[140px] overflow-y-auto content-start list-scrollbar">
                 {displaySpecializations.map((s) => {
                   const isSelected = form.specializationIds?.includes(s.id);
@@ -248,12 +259,14 @@ export default function TeacherFormModal({
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => toggleSpecialization(s.id)}
+                      onClick={() => !isViewMode && toggleSpecialization(s.id)}
+                      disabled={isViewMode}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition duration-150 select-none ${
                         isSelected
                           ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                          : 'bg-white text-slate-500 border-slate-200 hover:border-blue-400 hover:text-blue-600'
-                      }`}
+                          : 'bg-white text-slate-500 border-slate-200'
+                      } ${!isViewMode && !isSelected ? 'hover:border-blue-400 hover:text-blue-600' : ''} 
+                      ${isViewMode ? 'cursor-default opacity-90' : ''}`}
                     >
                       {s.name}
                     </button>
@@ -275,18 +288,20 @@ export default function TeacherFormModal({
             disabled={loading}
             className="px-4 py-2 text-sm font-medium text-slate-600 rounded-xl hover:bg-slate-100 transition border border-slate-200 bg-white"
           >
-            Hủy
+            {isViewMode ? 'Đóng' : 'Hủy'}
           </button>
           
-          <button
-            type="button"
-            onClick={handleSubmitForm}
-            disabled={loading || !form.fullName?.trim()}
-            className="px-5 py-2 text-sm font-semibold text-white rounded-xl transition hover:opacity-90 disabled:opacity-60 shadow-sm"
-            style={{ background: '#1b3392' }}
-          >
-            {loading ? 'Đang lưu…' : initialData ? 'Lưu thay đổi' : 'Thêm giảng viên'}
-          </button>
+          {!isViewMode && (
+            <button
+              type="button"
+              onClick={handleSubmitForm}
+              disabled={loading || !form.fullName?.trim() || (!initialData && !form.email?.trim())}
+              className="px-5 py-2 text-sm font-semibold text-white rounded-xl transition hover:opacity-90 disabled:opacity-60 shadow-sm"
+              style={{ background: '#1b3392' }}
+            >
+              {loading ? 'Đang lưu…' : initialData ? 'Lưu thay đổi' : 'Thêm giảng viên'}
+            </button>
+          )}
         </div>
 
       </div>

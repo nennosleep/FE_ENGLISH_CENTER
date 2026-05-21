@@ -23,6 +23,7 @@ import { useToast } from "../components/ui/Toast";
 // Layouts
 import AdminLayout from "../layouts/adminLayout";
 import AuthLayout from "../layouts/AuthLayout";
+import TeacherLayout from "../layouts/TeacherLayout";
 
 // Scheduling pages
 import CourseListPage from "../features/scheduling/pages/CourseListPage";
@@ -31,8 +32,14 @@ import ClassSetupPage from "../features/scheduling/pages/ClassSetupPage";
 import CalendarSchedulerPage from "../features/scheduling/pages/CalendarSchedulerPage";
 import SpecializationListPage from "../features/scheduling/pages/SpecializationListPage";
 
-// Teacher pages
-import TeacherListPage from "../features/teachers/pages/TeacherListPage";
+// Admin pages
+import TeacherListPage from "../features/scheduling/pages/TeacherListPage";
+
+// Teacher UI pages
+import TeacherOverviewPage from "../features/teachers/pages/TeacherOverviewPage";
+import TeacherDashboardPage from "../features/teachers/pages/TeacherDashboardPage";
+import TeacherAssignmentPage from "../features/teachers/pages/TeacherAssignmentPage";
+import TeacherProfilePage from "../features/teachers/pages/TeacherProfilePage";
 
 /**
  * Lắng nghe sự kiện 401 (hết hạn token)
@@ -181,6 +188,40 @@ const router = createBrowserRouter([
           {
             path: "teachers",
             element: <TeacherListPage />,
+          },
+        ],
+      },
+
+      // =========================================
+      // TEACHER ROUTES
+      // =========================================
+      {
+        path: "/teacher",
+        element: (
+          <PrivateRoute>
+            <TeacherLayout />
+          </PrivateRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <Navigate to="overview" replace />,
+          },
+          {
+            path: "overview",
+            element: <TeacherOverviewPage />,
+          },
+          {
+            path: "dashboard",
+            element: <TeacherDashboardPage />,
+          },
+          {
+            path: "assignments",
+            element: <TeacherAssignmentPage />,
+          },
+          {
+            path: "profile",
+            element: <TeacherProfilePage />,
           },
         ],
       },
