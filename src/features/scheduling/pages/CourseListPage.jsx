@@ -1,4 +1,7 @@
+// CourseListPage.jsx
+
 import React, { useEffect, useState } from "react";
+
 import {
   Search,
   Plus,
@@ -17,24 +20,31 @@ import {
 
 import { getSpecializationLevels } from "../../../services/specializationLevelService";
 
-// Import component Modal vừa tách
+import { getSpecializations } from "../../../services/specializationService";
+
 import CourseFormModal from "../components/CourseFormModal";
 
 export default function CourseListPage() {
   const [courses, setCourses] = useState([]);
+
   const [levels, setLevels] = useState([]);
+
+  const [specializations, setSpecializations] = useState([]);
+
   const [searchTerm, setSearchTerm] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
 
-  const ITEMS_PER_PAGE = 5;
-
-  /* States quản lý Modal */
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [selectedCourse, setSelectedCourse] = useState(null);
+
+  const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
     fetchCourses();
     fetchLevels();
+    fetchSpecializations();
   }, []);
 
   useEffect(() => {
@@ -47,6 +57,7 @@ export default function CourseListPage() {
   const fetchCourses = async () => {
     try {
       const data = await getCourses();
+
       setCourses(data || []);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách khóa học:", error);
@@ -59,9 +70,23 @@ export default function CourseListPage() {
   const fetchLevels = async () => {
     try {
       const data = await getSpecializationLevels();
+
       setLevels(data || []);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách trình độ:", error);
+    }
+  };
+
+  /* =========================
+      FETCH SPECIALIZATIONS
+  ========================= */
+  const fetchSpecializations = async () => {
+    try {
+      const data = await getSpecializations();
+
+      setSpecializations(data || []);
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách chuyên môn:", error);
     }
   };
 
@@ -76,9 +101,11 @@ export default function CourseListPage() {
     ) {
       try {
         await deleteCourse(id);
+
         fetchCourses();
       } catch (error) {
         console.error("Lỗi khi xóa khóa học:", error);
+
         alert("Không thể xóa khóa học này!");
       }
     }
@@ -96,9 +123,11 @@ export default function CourseListPage() {
       }
 
       setIsModalOpen(false);
+
       fetchCourses();
     } catch (error) {
       console.error("Lỗi xử lý API khóa học:", error);
+
       alert("Thao tác thất bại. Vui lòng kiểm tra lại!");
     }
   };
@@ -137,7 +166,7 @@ export default function CourseListPage() {
 
   return (
     <div className="space-y-6">
-      {/* TIÊU ĐỀ */}
+      {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
@@ -150,7 +179,7 @@ export default function CourseListPage() {
         </div>
       </div>
 
-      {/* KHUNG CHỨA */}
+      {/* CARD */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         {/* TOOLBAR */}
         <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -215,7 +244,9 @@ export default function CourseListPage() {
                   </td>
 
                   <td className="py-4 px-6 text-slate-500 font-normal">
-                    {course.durationHours ? `${course.durationHours}h` : "---"}
+                    {course.durationHours
+                      ? `${course.durationHours}h`
+                      : "---"}
                   </td>
 
                   <td
@@ -269,7 +300,9 @@ export default function CourseListPage() {
           <div>
             Hiển thị {filteredCourses.length > 0 ? indexOfFirstItem + 1 : 0} đến{" "}
             {Math.min(indexOfLastItem, filteredCourses.length)} trong số{" "}
-            <span className="text-slate-700">{filteredCourses.length}</span>{" "}
+            <span className="text-slate-700">
+              {filteredCourses.length}
+            </span>{" "}
             khóa học
           </div>
 
@@ -303,7 +336,9 @@ export default function CourseListPage() {
 
               <button
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  setCurrentPage((prev) =>
+                    Math.min(prev + 1, totalPages)
+                  )
                 }
                 disabled={currentPage === totalPages}
                 className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:hover:bg-transparent text-slate-600 transition"
@@ -317,12 +352,14 @@ export default function CourseListPage() {
 
       {/* MODAL */}
       <CourseFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleModalSubmit}
-        editingCourse={selectedCourse}
-        levelsData={levels}
-      />
+  isOpen={isModalOpen}
+  onClose={() => setIsModalOpen(false)}
+  onSubmit={handleModalSubmit}
+  editingCourse={selectedCourse}
+  levelsData={levels}
+  specializations={specializations}
+  courses={courses}
+/>
     </div>
   );
 }

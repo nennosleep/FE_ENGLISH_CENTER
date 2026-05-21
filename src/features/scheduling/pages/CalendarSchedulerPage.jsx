@@ -8,16 +8,17 @@ import {
   PieChart,
   Activity,
   Clock,
-  User
+  User,
+  Settings,
+  ArrowRight
 } from 'lucide-react';
+import CreateSessionFromRoomModal from '../components/CreateSessionFromRoomModal';
+import ClassScheduleConfigModal from '../components/ClassScheduleConfigModal';
 
-// Import các hàm gọi API từ Service
 import { getRooms, getRoomUtilization } from '../../../services/roomService'; 
-import { getClassScheduleStatus } from '../../../services/classService'; 
-// import { createSession } from '../../../services/sessionService'; // Hãy import hàm tạo lịch thật của bạn tại đây
+import { createSession } from '../../../services/sessionService';
 
 export default function CalendarSchedulerPage() {
-  // --- CÁC STATE QUẢN LÝ DỮ LIỆU THỰC ---
   const [rooms, setRooms] = useState([]); 
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -35,7 +36,6 @@ export default function CalendarSchedulerPage() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Cấu hình 6 ca học cố định để map giao diện lưới
   const slotsConfig = [
     { id: 1, name: 'Ca 1', time: '07:30 - 09:00', slotUuid: 'SLOT-001' },
     { id: 2, name: 'Ca 2', time: '09:30 - 11:00', slotUuid: 'SLOT-002' },
@@ -47,8 +47,8 @@ export default function CalendarSchedulerPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalPayload, setModalPayload] = useState(null);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-  // --- HÀM TỰ ĐỘNG TÍNH TOÁN 7 NGÀY THEO TUẦN ĐỘNG ---
   const getDaysOfWeek = (anchorDate) => {
     const currentDay = anchorDate.getDay();
     const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
@@ -77,13 +77,12 @@ export default function CalendarSchedulerPage() {
   const daysOfWeekList = getDaysOfWeek(currentDate);
   const mondayStr = daysOfWeekList[0].dateStr; 
 
-  // --- EFFECT 1: TẢI DANH SÁCH PHÒNG LẦN ĐẦU TIÊN ---
   useEffect(() => {
     const fetchRooms = async () => {
       try {
         const roomList = await getRooms();
-        setRooms(roomList);
-        if (roomList.length > 0) {
+        setRooms(roomList || []);
+        if (roomList && roomList.length > 0) {
           setSelectedRoomId(roomList[0].id); 
         }
       } catch (error) {
@@ -93,22 +92,29 @@ export default function CalendarSchedulerPage() {
     fetchRooms();
   }, []);
 
-  // --- EFFECT 2: TẢI CHI TIẾT TRƯNG DỤNG THEO PHÒNG VÀ TUẦN ---
-  useEffect(() => {
+  const fetchUtilization = async () => {
     if (!selectedRoomId) return;
+    setIsLoading(true);
+    try {
+      const data = await getRoomUtilization(selectedRoomId, mondayStr);
+      setUtilizationData(data || {
+        roomCode: '',
+        name: '',
+        capacity: 0,
+        utilizationRate: 0,
+        occupiedSlotsCount: 0,
+        totalSlotsInWeek: 42,
+        longTermClasses: [],
+        weeklySessions: []
+      });
+    } catch (error) {
+      console.error("Lỗi khi tải dữ liệu sử dụng phòng:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const fetchUtilization = async () => {
-      setIsLoading(true);
-      try {
-        const data = await getRoomUtilization(selectedRoomId, mondayStr);
-        setUtilizationData(data);
-      } catch (error) {
-        console.error("Lỗi khi tải dữ liệu sử dụng phòng:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchUtilization();
   }, [selectedRoomId, mondayStr]);
 
@@ -137,60 +143,74 @@ export default function CalendarSchedulerPage() {
     setIsModalOpen(true);
   };
 
-  const handleSaveSuccess = async () => {
+  const handleSaveSuccess = () => {
     setIsModalOpen(false);
-    try {
-      const data = await getRoomUtilization(selectedRoomId, mondayStr);
-      setUtilizationData(data);
-    } catch (error) {
-      console.error("Lỗi khi tải lại dữ liệu tổng lưới:", error);
-    }
+    fetchUtilization(); 
+  };
+
+  const handleScheduleSaveSuccess = () => {
+    setIsScheduleModalOpen(false);
+    fetchUtilization(); 
   };
 
   return (
-    <div className={`space-y-6 w-full mx-auto pb-10 ${isLoading ? 'opacity-60 pointer-events-none transition-opacity' : ''}`}>
+    <div className={`space-y-5 w-full mx-auto pb-10 ${isLoading ? 'opacity-60 pointer-events-none transition-opacity' : ''}`}>
       
-      {/* SECTION 1: THANH ĐIỀU HƯỚNG & CHỌN PHÒNG */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* SECTION 1: NAVIGATION & ROOM SELECTOR (Tích hợp nút thiết lập nhỏ gọn) */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+          <div className="p-2 bg-blue-50 text-blue-600 rounded-xl shrink-0">
             <Layers size={20} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Trung tâm Điều phối & Trưng dụng Phòng</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Theo dõi chi tiết hiệu suất và phân lịch dựa trên trạng thái thực tế.</p>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">Trung tâm Điều phối & Trưng dụng Phòng</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Theo dõi hiệu suất và phân lịch dựa trên trạng thái thực tế.</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label htmlFor="room-select" className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Xem phòng:</label>
-          <select
-            id="room-select"
-            value={selectedRoomId}
-            onChange={(e) => setSelectedRoomId(e.target.value)}
-            className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 focus:bg-white transition cursor-pointer"
+        <div className="flex flex-wrap items-center gap-3 md:gap-4 justify-start md:justify-end">
+          {/* Nút cấu hình thứ lặp lại (Thu nhỏ siêu gọn) */}
+          <button
+            onClick={() => setIsScheduleModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 hover:text-indigo-600 font-bold text-xs rounded-xl transition cursor-pointer shadow-3xs group"
           >
-            {rooms.map((room) => (
-              <option key={room.id} value={room.id}>
-                {room.roomCode} - {room.name}
-              </option>
-            ))}
-          </select>
+            <Settings size={13} className="group-hover:rotate-45 transition-transform" />
+            Cấu hình Thứ lặp lại
+          </button>
+
+          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+
+          {/* Ô Chọn phòng */}
+          <div className="flex items-center gap-2">
+            <label htmlFor="room-select" className="text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Xem phòng:</label>
+            <select
+              id="room-select"
+              value={selectedRoomId}
+              onChange={(e) => setSelectedRoomId(e.target.value)}
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 focus:bg-white transition cursor-pointer"
+            >
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.roomCode} - {room.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* SECTION 2: DASHBOARD CHI TIẾT TRƯNG DỤNG */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between min-h-[180px]">
+      {/* SECTION 2: UTILIZATION DASHBOARD */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col justify-between min-h-[160px]">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
               <PieChart size={12} className="text-blue-500" /> Tần suất sử dụng tuần này
             </span>
-            <h4 className="text-sm font-bold text-slate-700">Hiệu suất phòng {utilizationData.roomCode}</h4>
+            <h4 className="text-xs font-bold text-slate-700">Hiệu suất phòng {utilizationData.roomCode}</h4>
           </div>
-          <div className="py-2 flex items-baseline gap-2">
-            <span className="text-4xl font-black text-blue-600 tracking-tight">{utilizationData.utilizationRate}%</span>
-            <span className="text-xs text-slate-400">({utilizationData.occupiedSlotsCount}/{utilizationData.totalSlotsInWeek} ca đã gán)</span>
+          <div className="py-1 flex items-baseline gap-2">
+            <span className="text-3xl font-black text-blue-600 tracking-tight">{utilizationData.utilizationRate}%</span>
+            <span className="text-[11px] text-slate-400">({utilizationData.occupiedSlotsCount}/{utilizationData.totalSlotsInWeek} ca đã gán)</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-2">
             <div 
@@ -200,31 +220,31 @@ export default function CalendarSchedulerPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col min-h-[180px]">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-3">
+        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col min-h-[160px]">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2.5">
             <Activity size={12} className="text-indigo-500" /> 
             Danh sách lớp chiếm dụng dài hạn ({utilizationData.longTermClasses.length})
           </span>
 
           {utilizationData.longTermClasses.length === 0 ? (
-            <div className="flex-1 min-h-[100px] bg-slate-50/60 rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-400 italic">
+            <div className="flex-1 min-h-[80px] bg-slate-50/60 rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-400 italic">
               🎉 Hiện tại không có lớp học nào cố định tại phòng này. Bạn có thể tự do xếp lịch!
             </div>
           ) : (
-            <div className="space-y-2.5 max-h-[120px] overflow-y-auto pr-2 flex-1">
+            <div className="space-y-2 max-h-[110px] overflow-y-auto pr-2 flex-1">
               {utilizationData.longTermClasses.map((item, idx) => (
-                <div key={idx} className="p-3 bg-slate-50 rounded-xl border-l-4 border-l-blue-500 border-y border-r border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs hover:bg-slate-100/60 transition">
+                <div key={idx} className="p-2.5 bg-slate-50 rounded-xl border-l-4 border-l-blue-500 border-y border-r border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs hover:bg-slate-100/60 transition">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 text-sm bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">{item.classCode}</span>
+                      <span className="font-bold text-slate-900 text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">{item.classCode}</span>
                       <span className="text-[11px] font-medium text-slate-500">({item.courseName})</span>
                     </div>
-                    <div className="flex items-center gap-4 text-slate-500 mt-1.5">
-                      <span className="flex items-center gap-1"><Clock size={12} className="text-slate-400"/> Lịch: <strong className="text-indigo-600">{item.schedulePattern}</strong></span>
-                      <span className="flex items-center gap-1"><User size={12} className="text-slate-400"/> GV: {item.teacherName}</span>
+                    <div className="flex items-center gap-4 text-[11px] text-slate-500 mt-1">
+                      <span className="flex items-center gap-1"><Clock size={11} className="text-slate-400"/> Lịch: <strong className="text-indigo-600">{item.schedulePattern}</strong></span>
+                      <span className="flex items-center gap-1"><User size={11} className="text-slate-400"/> GV: {item.teacherName}</span>
                     </div>
                   </div>
-                  <div className="text-left sm:text-right text-[11px] text-slate-400 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200 whitespace-nowrap">
+                  <div className="text-left sm:text-right text-[10px] text-slate-400 border-t sm:border-t-0 pt-1.5 sm:pt-0 border-slate-200 whitespace-nowrap leading-normal">
                     Chu kỳ: {item.startDate} → {item.endDate} <br/>
                     Sĩ số: <span className="font-bold text-slate-700">{item.totalStudents}</span>/{utilizationData.capacity} HS
                   </div>
@@ -235,23 +255,23 @@ export default function CalendarSchedulerPage() {
         </div>
       </div>
 
-      {/* SECTION 3: LƯỚI GRID LỊCH THỜI KHÓA BIỂU TUẦN VỤ */}
+      {/* SECTION 3: SCHEDULER WEEKLY GRID */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
-          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-            <Calendar size={16} className="text-blue-600" />
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
+          <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+            <Calendar size={15} className="text-blue-600" />
             Chi tiết phân rã lịch theo ca tuần: 
-            <span className="text-slate-400 font-normal"> từ {daysOfWeekList[0].label.replace('Ngày ', '')} đến {daysOfWeekList[6].label.replace('Ngày ', '')}</span>
+            <span className="text-slate-400 font-normal"> từ {daysOfWeekList[0].label} đến {daysOfWeekList[6].label}</span>
           </h3>
-          <div className="flex items-center border border-slate-200 rounded-xl bg-white overflow-hidden shadow-2xs">
-            <button onClick={() => handleNavigateWeek(-1)} className="p-2 text-slate-500 hover:bg-slate-50 border-r border-slate-200 transition"><ChevronLeft size={14} /></button>
-            <button onClick={() => handleNavigateWeek(1)} className="p-2 text-slate-500 hover:bg-slate-50 transition"><ChevronRight size={14} /></button>
+          <div className="flex items-center border border-slate-200 rounded-xl bg-white overflow-hidden shadow-3xs">
+            <button onClick={() => handleNavigateWeek(-1)} className="p-1.5 text-slate-500 hover:bg-slate-50 border-r border-slate-200 transition"><ChevronLeft size={13} /></button>
+            <button onClick={() => handleNavigateWeek(1)} className="p-1.5 text-slate-500 hover:bg-slate-50 transition"><ChevronRight size={13} /></button>
           </div>
         </div>
 
         <div className="grid grid-cols-7 border-b border-l border-slate-100 overflow-x-auto">
           {daysOfWeekList.map((day, index) => (
-            <div key={index} className="bg-slate-50/80 border-r border-b border-slate-200 text-center py-2.5 text-[11px] font-bold text-slate-600 uppercase tracking-wider min-w-[130px]">
+            <div key={index} className="bg-slate-50/80 border-r border-b border-slate-200 text-center py-2 text-[10px] font-bold text-slate-600 uppercase tracking-wider min-w-[130px]">
               {day.dayName}
             </div>
           ))}
@@ -259,7 +279,7 @@ export default function CalendarSchedulerPage() {
           {daysOfWeekList.map((day, i) => {
             return (
               <div key={i} className="bg-white border-r border-b border-slate-100 p-2 flex flex-col gap-2 min-h-[420px] min-w-[130px]">
-                <span className="text-[11px] font-black text-slate-400 block pb-1 border-b border-slate-100 text-center bg-slate-50/30 rounded py-0.5">{day.label}</span>
+                <span className="text-[10px] font-black text-slate-400 block pb-1 border-b border-slate-100 text-center bg-slate-50/30 rounded py-0.5">{day.label}</span>
                 
                 <div className="space-y-2 flex-1 flex flex-col justify-between">
                   {slotsConfig.map((slot) => {
@@ -272,7 +292,7 @@ export default function CalendarSchedulerPage() {
                         <div 
                           key={slot.id} 
                           onClick={() => handleCellClick(day.dateStr, slot)}
-                          className="p-2 rounded-xl border bg-amber-50/80 border-amber-200 hover:border-amber-400 text-left min-h-[55px] flex flex-col justify-between cursor-pointer transition select-none shadow-2xs"
+                          className="p-2 rounded-xl border bg-amber-50/80 border-amber-200 hover:border-amber-400 text-left min-h-[55px] flex flex-col justify-between cursor-pointer transition select-none shadow-3xs"
                         >
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-600 text-white truncate max-w-[80px]">{sessionInCell.className}</span>
@@ -307,7 +327,7 @@ export default function CalendarSchedulerPage() {
         </div>
       </div>
 
-      {/* MODAL PHÂN PHỐI LỚP HỌC */}
+      {/* MODAL SESSIONS */}
       <CreateSessionFromRoomModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -315,143 +335,13 @@ export default function CalendarSchedulerPage() {
         onSaveSuccess={handleSaveSuccess}
       />
 
-    </div>
-  );
-}
+      {/* MODAL SCHEDULE RECURRING CONFIG */}
+      <ClassScheduleConfigModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        onSaveSuccess={handleScheduleSaveSuccess}
+      />
 
-// ==========================================
-// COMPONENT MODAL CON ĐỂ GÁN LỚP
-// ==========================================
-function CreateSessionFromRoomModal({ isOpen, onClose, payload, onSaveSuccess }) {
-  const [selectedClassId, setSelectedClassId] = useState('');
-  const [shouldBulkSpread, setShouldBulkSpread] = useState(false);
-  
-  // State quản lý danh sách lớp lấy từ Backend
-  const [unassignedClasses, setUnassignedClasses] = useState([]);
-  const [assignedClasses, setAssignedClasses] = useState([]);
-  const [isFetchLoading, setIsFetchLoading] = useState(false);
-
-  // Gọi API phân loại lớp học mỗi khi mở Modal
-  useEffect(() => {
-    if (isOpen && !payload?.existingSession) {
-      setIsFetchLoading(true);
-      getClassScheduleStatus()
-        .then(data => {
-          setUnassignedClasses(data.unassignedClasses || []);
-          setAssignedClasses(data.assignedClasses || []);
-        })
-        .catch(error => {
-          console.error("Lỗi khi tải phân loại lớp học:", error);
-        })
-        .finally(() => {
-          setIsFetchLoading(false);
-        });
-    }
-  }, [isOpen, payload]);
-
-  if (!isOpen) return null;
-  const isOccupied = !!payload?.existingSession;
-
-  const handleConfirm = async () => {
-    if (!selectedClassId) return;
-    
-    try {
-      // Đã mở khóa kết nối xuống DB thực tế của bạn
-      // await createSession({
-      //   classId: selectedClassId,
-      //   roomId: payload.roomId,
-      //   timeSlotId: payload.slotUuid, 
-      //   sessionDate: payload.date,
-      //   isBulkSpread: shouldBulkSpread
-      // });
-      
-      setSelectedClassId('');
-      setShouldBulkSpread(false);
-      onSaveSuccess(); // Đóng modal và kích hoạt reload lưới tổng
-    } catch (error) {
-      console.error("Lỗi khi gán lịch học xuống DB:", error);
-      alert("Không thể xếp lịch, ca học tại phòng đã bị trùng khớp!");
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xl max-w-md w-full overflow-hidden">
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-sm font-bold text-slate-800">{isOccupied ? 'Thông tin lịch học hiện tại' : 'Gán khung lớp học vào phòng'}</h3>
-          <p className="text-xs text-slate-500 mt-1">Phòng: <span className="font-bold text-blue-600">{payload?.roomCode}</span> | Ngày: {payload?.date} ({payload?.time})</p>
-        </div>
-        
-        <div className="p-5 space-y-4">
-          {isOccupied ? (
-            <div className="space-y-2">
-              <div className="bg-amber-50/70 border border-amber-200 text-amber-950 p-3 rounded-xl text-xs shadow-2xs">
-                Mã lớp: <strong>{payload.existingSession.className}</strong> <br/>
-                Giáo viên phụ trách: {payload.existingSession.teacherName}
-              </div>
-              <p className="text-[11px] text-slate-400 italic">* Lưu ý: Để hủy hoặc đổi phòng, vui lòng truy cập chức năng điều phối nâng cao.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Chọn lớp học cần lập lịch</label>
-                <select 
-                  value={selectedClassId}
-                  onChange={(e) => setSelectedClassId(e.target.value)}
-                  disabled={isFetchLoading}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition disabled:opacity-50 font-semibold text-slate-700 cursor-pointer"
-                >
-                  <option value="">{isFetchLoading ? "🔄 Đang tải danh sách lớp..." : "-- Chọn lớp học --"}</option>
-                  
-                  {/* NHÓM 1: CÁC LỚP CHƯA XẾP LỊCH */}
-                  <optgroup label="Lớp chưa xếp lịch học (Cần xử lý)">
-                    {unassignedClasses.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.classCode} {c.courseNameSnapshot ? `- ${c.courseNameSnapshot}` : ''}
-                      </option>
-                    ))}
-                    {unassignedClasses.length === 0 && !isFetchLoading && (
-                      <option disabled>Không có lớp nào trống lịch</option>
-                    )}
-                  </optgroup>
-
-                  {/* NHÓM 2: CÁC LỚP ĐÃ CÓ LỊCH */}
-                  <optgroup label="Lớp đã có lịch học (Xếp tăng cường)">
-                    {assignedClasses.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.classCode} {c.courseNameSnapshot ? `- ${c.courseNameSnapshot}` : ''}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-              </div>
-
-              <div className="bg-blue-50/70 border border-blue-100 p-3.5 rounded-xl">
-                <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                  <input type="checkbox" checked={shouldBulkSpread} onChange={(e) => setShouldBulkSpread(e.target.checked)} className="mt-0.5 rounded text-blue-600 focus:ring-blue-500" />
-                  <div className="text-xs text-blue-900">
-                    <p className="font-bold">Tự động dàn đều lịch (Bulk Schedule)</p>
-                    <p className="text-blue-700/80 text-[11px] mt-0.5">Hệ thống dựa vào ngày bắt đầu/kết thúc lớp để tự điền ca học này cho toàn bộ các tuần kế tiếp.</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition">Đóng</button>
-          {!isOccupied && (
-            <button 
-              onClick={handleConfirm} 
-              disabled={!selectedClassId || isFetchLoading}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-50 shadow-2xs"
-            >
-              Xác nhận xếp lịch
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

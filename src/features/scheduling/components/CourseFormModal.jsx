@@ -1,83 +1,197 @@
+// CourseFormModal.jsx
+
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
-// Khởi tạo trạng thái ban đầu của Form sạch để tái sử dụng
 const INITIAL_FORM = {
   code: "",
   name: "",
+  specializationId: "",
   levelId: "",
   durationHours: "",
   outputStandard: "",
 };
-import { getSpecializationLevelById } from "../../../services/specializationLevelService";
+
+/* =========================
+    GENERATE COURSE CODE
+========================= */
+const generateCourseCode = (courses) => {
+  if (!courses.length) return "CRS001";
+
+  const numbers = courses
+    .map((course) => {
+      const match = course.code?.match(/\d+/);
+
+      return match ? Number(match[0]) : 0;
+    })
+    .filter(Boolean);
+
+  const nextNumber =
+    numbers.length > 0
+      ? Math.max(...numbers) + 1
+      : 1;
+
+  return `CRS${String(nextNumber).padStart(
+    3,
+    "0"
+  )}`;
+};
+
+/* =========================
+    GENERATE COURSE NAME
+========================= */
+const generateCourseName = (
+  specialization,
+  level
+) => {
+  if (!specialization || !level) return "";
+
+  return `${specialization.name} - ${level.name}`;
+};
+
 export default function CourseFormModal({
   isOpen,
   onClose,
   onSubmit,
   editingCourse,
   levelsData = [],
+  specializations = [],
+  courses = [],
 }) {
-  // --- STATE QUẢN LÝ DỮ LIỆU ĐẦU VÀO CỦA FORM ---
-  const [formData, setFormData] = useState(INITIAL_FORM);
+  const [formData, setFormData] =
+    useState(INITIAL_FORM);
 
-  // --- ĐỒNG BỘ DỮ LIỆU (LIFECYCLE SIDE-EFFECT) ---
-  // Mỗi khi Modal được mở ra, kiểm tra xem là hành động "Thêm mới" hay "Chỉnh sửa"
+  /* =========================
+      FILTER LEVELS
+  ========================= */
+  const filteredLevels = levelsData.filter(
+    (level) =>
+      level.specializationId ===
+      formData.specializationId
+  );
+
+  /* =========================
+      INIT FORM
+  ========================= */
   useEffect(() => {
-    if (isOpen) {
-      if (editingCourse) {
-        // Nếu có editingCourse -> Điền dữ liệu cũ vào các ô input để sửa
-        setFormData({
-          code: editingCourse.code || "",
-          name: editingCourse.name || "",
-          levelId: editingCourse.levelId || levelsData[0]?.id || "",
-          durationHours: editingCourse.durationHours || "",
-          outputStandard: editingCourse.outputStandard || "",
-        });
-      } else {
-        // Nếu không có editingCourse -> Reset form về trống, mặc định chọn Trình độ đầu tiên
-        setFormData({
-          ...INITIAL_FORM,
-          levelId: levelsData[0]?.id || "",
-        });
-      }
-    }
-  }, [isOpen, editingCourse, levelsData]);
+    if (!isOpen) return;
 
-  // Nếu trạng thái đóng, không render bất cứ thứ gì ra DOM (Giúp giải phóng bộ nhớ và xóa data rác)
+    // EDIT MODE
+    if (editingCourse) {
+      const selectedLevel = levelsData.find(
+        (lv) => lv.id === editingCourse.levelId
+      );
+
+      setFormData({
+        code: editingCourse.code || "",
+        name: editingCourse.name || "",
+        specializationId:
+          selectedLevel?.specializationId || "",
+        levelId:
+          editingCourse.levelId || "",
+        durationHours:
+          editingCourse.durationHours || "",
+        outputStandard:
+          editingCourse.outputStandard || "",
+      });
+
+      return;
+    }
+
+    // CREATE MODE
+    setFormData({
+      ...INITIAL_FORM,
+      code: generateCourseCode(courses),
+    });
+  }, [
+    isOpen,
+    editingCourse,
+    levelsData,
+    courses,
+  ]);
+
+  /* =========================
+      AUTO GENERATE NAME
+  ========================= */
+  useEffect(() => {
+    if (!isOpen || editingCourse) return;
+
+    const selectedSpec =
+      specializations.find(
+        (spec) =>
+          spec.id === formData.specializationId
+      );
+
+    const selectedLevel =
+      levelsData.find(
+        (level) =>
+          level.id === formData.levelId
+      );
+
+    const generatedName =
+      generateCourseName(
+        selectedSpec,
+        selectedLevel
+      );
+
+    setFormData((prev) => ({
+      ...prev,
+      name: generatedName,
+    }));
+  }, [
+    isOpen,
+    editingCourse,
+    formData.specializationId,
+    formData.levelId,
+    specializations,
+    levelsData,
+  ]);
+
   if (!isOpen) return null;
 
-  // --- XỬ LÝ SUBMIT DỮ LIỆU ---
+  /* =========================
+      SUBMIT
+  ========================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const payload = {
       code: formData.code,
       name: formData.name,
-
-      // QUAN TRỌNG
       levelId: formData.levelId,
-
-      durationHours: Number(formData.durationHours),
-      outputStandard: formData.outputStandard,
+      durationHours: Number(
+        formData.durationHours
+      ),
+      outputStandard:
+        formData.outputStandard,
     };
 
-    console.log("Payload gửi lên API:", payload);
+    console.log(
+      "Payload gửi lên API:",
+      payload
+    );
 
     onSubmit(payload);
   };
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200">
-      {/* Lớp nền mờ phía sau - Click ra ngoài để đóng modal */}
-      <div className="absolute inset-0" onClick={onClose} />
+      {/* BACKDROP */}
+      <div
+        className="absolute inset-0"
+        onClick={onClose}
+      />
 
-      {/* Khung chứa Form chính */}
+      {/* MODAL */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-150">
-        {/* --- HEADER MODAL --- */}
+        {/* HEADER */}
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-900">
-            {editingCourse ? "Chỉnh sửa khóa học" : "Thêm khóa học mới"}
+            {editingCourse
+              ? "Chỉnh sửa khóa học"
+              : "Thêm khóa học mới"}
           </h3>
+
           <button
             type="button"
             onClick={onClose}
@@ -87,57 +201,143 @@ export default function CourseFormModal({
           </button>
         </div>
 
-        {/* --- BODY FORM --- */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        {/* FORM */}
+        <form
+          onSubmit={handleSubmit}
+          className="p-5 space-y-4"
+        >
           {/* MÃ KHÓA HỌC */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-              Mã khóa học <span className="text-rose-500">*</span>
+              Mã khóa học{" "}
+              <span className="text-rose-500">
+                *
+              </span>
             </label>
+
             <input
               type="text"
               required
-              disabled={!!editingCourse} // Nếu là sửa thì không cho sửa Mã (Read-only)
+              disabled
               value={formData.code}
-              onChange={(e) =>
-                setFormData({ ...formData, code: e.target.value })
-              }
-              placeholder="Ví dụ: IELTS-4.0-BASIC"
-              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/50 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed transition"
+              placeholder="CRS001"
+              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm bg-slate-100 text-slate-500 cursor-not-allowed"
             />
           </div>
 
           {/* TÊN KHÓA HỌC */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-              Tên khóa học <span className="text-rose-500">*</span>
+              Tên khóa học{" "}
+              <span className="text-rose-500">
+                *
+              </span>
             </label>
+
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
+                setFormData({
+                  ...formData,
+                  name: e.target.value,
+                })
               }
-              placeholder="Ví dụ: Khóa học luyện thi IELTS mục tiêu 4.0"
+              placeholder="IELTS - 6.0"
               className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition"
             />
+
+            {!editingCourse && (
+              <p className="text-[11px] text-slate-400 mt-1">
+                Tên được tự động tạo theo
+                chuyên môn và trình độ.
+              </p>
+            )}
           </div>
 
-          {/* TRÌNH ĐỘ (DROPDOWN SELECT) */}
+          {/* CHUYÊN MÔN */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-              Trình độ <span className="text-rose-500">*</span>
+              Chuyên môn{" "}
+              <span className="text-rose-500">
+                *
+              </span>
             </label>
+
             <select
-              value={formData.levelId}
-              onChange={(e) =>
-                setFormData({ ...formData, levelId: e.target.value })
+              required
+              value={
+                formData.specializationId
               }
+              onChange={(e) => {
+                const specializationId =
+                  e.target.value;
+
+                // LEVEL ĐẦU TIÊN
+                const firstLevel =
+                  levelsData.find(
+                    (level) =>
+                      level.specializationId ===
+                      specializationId
+                  );
+
+                setFormData((prev) => ({
+                  ...prev,
+                  specializationId,
+                  levelId:
+                    firstLevel?.id || "",
+                }));
+              }}
               className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-white transition"
             >
-              {levelsData.map((level) => (
-                <option key={level.id} value={level.id}>
+              <option value="">
+                -- Chọn chuyên môn --
+              </option>
+
+              {specializations.map((spec) => (
+                <option
+                  key={spec.id}
+                  value={spec.id}
+                >
+                  {spec.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* TRÌNH ĐỘ */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+              Trình độ{" "}
+              <span className="text-rose-500">
+                *
+              </span>
+            </label>
+
+            <select
+              required
+              value={formData.levelId}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  levelId: e.target.value,
+                }))
+              }
+              disabled={
+                !formData.specializationId
+              }
+              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-white transition disabled:bg-slate-100 disabled:cursor-not-allowed"
+            >
+              <option value="">
+                -- Chọn trình độ --
+              </option>
+
+              {filteredLevels.map((level) => (
+                <option
+                  key={level.id}
+                  value={level.id}
+                >
                   {level.name}
                 </option>
               ))}
@@ -149,12 +349,17 @@ export default function CourseFormModal({
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
               Số giờ học
             </label>
+
             <input
               type="number"
               min="0"
               value={formData.durationHours}
               onChange={(e) =>
-                setFormData({ ...formData, durationHours: e.target.value })
+                setFormData({
+                  ...formData,
+                  durationHours:
+                    e.target.value,
+                })
               }
               placeholder="Ví dụ: 60"
               className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition"
@@ -166,18 +371,23 @@ export default function CourseFormModal({
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
               Chuẩn đầu ra
             </label>
+
             <textarea
               rows="3"
               value={formData.outputStandard}
               onChange={(e) =>
-                setFormData({ ...formData, outputStandard: e.target.value })
+                setFormData({
+                  ...formData,
+                  outputStandard:
+                    e.target.value,
+                })
               }
               placeholder="Mô tả tiêu chuẩn kiến thức đạt được sau khóa học..."
               className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 resize-none transition"
             />
           </div>
 
-          {/* --- FOOTER BUTTONS --- */}
+          {/* FOOTER */}
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
             <button
               type="button"
@@ -186,11 +396,14 @@ export default function CourseFormModal({
             >
               Hủy bỏ
             </button>
+
             <button
               type="submit"
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-blue-600/10 transition"
             >
-              {editingCourse ? "Lưu thay đổi" : "Thêm mới"}
+              {editingCourse
+                ? "Lưu thay đổi"
+                : "Thêm mới"}
             </button>
           </div>
         </form>
