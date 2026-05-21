@@ -5,18 +5,17 @@ import { createSession } from '../../../services/sessionService';
 
 /**
  * Component Modal phân phối ca học cho phòng học
- * Tích hợp tính năng: Tự động kiểm tra khoảng thời gian hợp lệ của lớp học so với ngày gán lịch
+ * Đã chuẩn hóa dữ liệu ngày tháng tương thích tuyệt đối với Java LocalDate
  */
 export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, onSaveSuccess }) {
   if (!isOpen || !payload) return null;
 
   const [classesList, setClassesList] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
-  const [shouldBulkSpread, setShouldBulkSpread] = useState(false);
+  const [isLocked, setIsLocked] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   
-  // State quản lý cảnh báo ngoài khoảng thời gian
   const [dateValidationWarning, setDateValidationWarning] = useState('');
   const [isDateInvalid, setIsDateInvalid] = useState(false);
 
@@ -28,9 +27,6 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
         setDateValidationWarning('');
         setIsDateInvalid(false);
         const res = await getClassScheduleStatus();
-        
-        console.log("=== DEBUG API RESPONSE ===");
-        console.log("Dữ liệu lớp học nhận từ API:", res);
         
         let finalArray = [];
         if (!res) {
@@ -54,7 +50,6 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
 
         setClassesList(finalArray);
         
-        // Tự động chọn phần tử đầu tiên
         if (finalArray.length > 0) {
           const firstItem = finalArray[0];
           setSelectedClassId(firstItem.id || firstItem.classId || firstItem._id || '');
@@ -73,7 +68,7 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
     }
   }, [isOpen]);
 
-  // Luồng theo dõi và kiểm tra tính hợp lệ của ngày khi thay đổi lớp học được chọn
+  // Kiểm tra khoảng ngày hoạt động hợp lệ của lớp học
   useEffect(() => {
     if (!selectedClassId || !payload.date || classesList.length === 0) {
       setDateValidationWarning('');
@@ -81,20 +76,14 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
       return;
     }
 
-    // Tìm thông tin lớp học đang được chọn trong danh sách
     const selectedClass = classesList.find(c => (c.id || c.classId || c._id) === selectedClassId);
     
     if (selectedClass) {
-      // Nhận diện linh hoạt các trường ngày bắt đầu / kết thúc từ API Backend
       const startStr = selectedClass.startDate || selectedClass.startAt || selectedClass.openedAt;
       const endStr = selectedClass.endDate || selectedClass.endAt || selectedClass.closedAt;
 
-      console.log(`[VALIDATE] Lớp: ${selectedClass.classCode}. Khoảng hạn: ${startStr} đến ${endStr}. Ngày xếp: ${payload.date}`);
-
       if (startStr || endStr) {
         const targetDate = new Date(payload.date);
-        
-        // Reset giờ về 0 để so sánh ngày chính xác
         targetDate.setHours(0,0,0,0);
 
         if (startStr) {
@@ -119,7 +108,6 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
       }
     }
 
-    // Nếu vượt qua toàn bộ điều kiện check trên
     setDateValidationWarning('');
     setIsDateInvalid(false);
   }, [selectedClassId, classesList, payload.date]);
@@ -139,25 +127,38 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
     setErrorMsg('');
 
     try {
-      await createSession({
+      // 🔥 CHUẨN HÓA NGÀY VỀ ĐỊNH DẠNG PHẲNG YYYY-MM-DD CHO JAVA LOCALDATE
+      let cleanDate = payload.date;
+      if (cleanDate) {
+        cleanDate = cleanDate.trim();
+        if (cleanDate.includes('T')) {
+          cleanDate = cleanDate.split('T')[0]; // Loại bỏ phần thời gian "00:00:00" nếu có
+        }
+      }
+
+      const requestPayload = {
         classId: selectedClassId,
         roomId: payload.roomId,
         timeSlotId: payload.slotUuid, 
-        sessionDate: payload.date,
-        isBulkSpread: shouldBulkSpread 
-      });
+        sessionDate: cleanDate, 
+        isLocked: isLocked            
+      };
 
-      setShouldBulkSpread(false);
+      console.log("=== SENDING DATA TO SPRING BOOT ===", requestPayload);
+      
+      await createSession(requestPayload);
       onSaveSuccess(); 
     } catch (err) {
-      console.error("Lỗi khi tạo ca học:", err);
-      setErrorMsg(err.response?.data?.message || "Xếp lịch thất bại. Ô lịch bị trùng hoặc giảng viên bận lịch khác.");
-    } {
+      console.error("Lỗi chi tiết từ hệ thống:", err);
+      
+      // Đọc thông điệp lỗi thực tế từ phòng server trả về thay vì hiển thị text phán đoán
+      const serverError = err.response?.data?.message || err.response?.data?.error || err.response?.data;
+      setErrorMsg(typeof serverError === 'string' ? serverError : "Xếp lịch thất bại. Hãy kiểm tra lại ràng buộc dữ liệu hoặc trùng lịch.");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Định dạng ngày hiển thị dạng DD/MM/YYYY
   const formatDateDisplay = (dateStr) => {
     if (!dateStr) return '';
     const parts = dateStr.includes('T') ? dateStr.split('T')[0].split('-') : dateStr.split('-');
@@ -170,7 +171,7 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
       <div className="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
         
-        {/* Modal Header */}
+        {/* Header */}
         <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-900">Phân Phối Ca Học Mới</h3>
@@ -188,16 +189,16 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           
-          {/* Thông tin ô lịch đang chọn */}
+          {/* Ô thông tin lịch lựa chọn */}
           <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-xs text-blue-800 grid grid-cols-2 gap-2">
             <div>📍 Phòng: <strong className="text-blue-900">{payload.roomCode}</strong></div>
             <div>📅 Ngày chọn: <strong className="text-blue-900">{formatDateDisplay(payload.date)}</strong></div>
             <div className="col-span-2">⏰ Thời gian: <strong className="text-blue-900">Ca {payload.slotId} ({payload.time})</strong></div>
           </div>
 
-          {/* CẢNH BÁO NẰM NGOÀI KHOẢNG THỜI GIAN HỢP LỆ */}
+          {/* Cảnh báo thời gian hoạt động */}
           {dateValidationWarning && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-medium flex items-start gap-2 animate-pulse">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-medium flex items-start gap-2">
               <CalendarClock size={16} className="mt-0.5 shrink-0 text-amber-600" />
               <div>
                 <span className="font-bold block text-amber-800">Cảnh báo thời gian:</span>
@@ -206,15 +207,15 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
             </div>
           )}
 
-          {/* Thông báo lỗi từ API hoặc Validation tổng */}
+          {/* Error Message */}
           {errorMsg && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-600 font-medium flex items-start gap-2">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-              <span>{errorMsg}</span>
+              <span className="break-words">{errorMsg}</span>
             </div>
           )}
 
-          {/* Menu chọn lớp học */}
+          {/* Chọn lớp học */}
           <div className="space-y-1.5">
             <label htmlFor="modal-class-select" className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Chọn Lớp Học Khả Dụng:
@@ -249,29 +250,27 @@ export default function CreateSessionFromRoomModal({ isOpen, onClose, payload, o
             </select>
           </div>
 
-          {/* Checkbox cấu hình rải lịch tự động */}
+          {/* Giao diện UI tùy chỉnh trạng thái Khóa ca học (isLocked) */}
           <div 
-            onClick={() => !isSubmitting && !isDateInvalid && setShouldBulkSpread(!shouldBulkSpread)}
-            className={`p-3 rounded-xl border transition flex items-start gap-3 select-none ${
-              isDateInvalid 
-                ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60' 
-                : shouldBulkSpread ? 'bg-blue-50/30 border-blue-200 cursor-pointer' : 'bg-slate-50 border-slate-200/60 cursor-pointer'
+            onClick={() => !isSubmitting && setIsLocked(!isLocked)}
+            className={`p-3 rounded-xl border transition flex items-start gap-3 select-none cursor-pointer ${
+              isLocked ? 'bg-indigo-50/40 border-indigo-200' : 'bg-slate-50 border-slate-200/60'
             }`}
           >
-            <div className={`mt-0.5 ${shouldBulkSpread && !isDateInvalid ? 'text-blue-600' : 'text-slate-400'}`}>
-              {shouldBulkSpread && !isDateInvalid ? <CheckSquare size={16} /> : <Square size={16} />}
+            <div className={`mt-0.5 ${isLocked ? 'text-indigo-600' : 'text-slate-400'}`}>
+              {isLocked ? <CheckSquare size={16} /> : <Square size={16} />}
             </div>
             <div className="text-xs">
               <span className="font-bold text-slate-800 block">
-                Tự động rải lịch hàng loạt tuần tới
+                Khóa ca học này ngay sau khi tạo
               </span>
-              <span className="text-slate-500 mt-0.5 block line-clamp-3">
-                Hệ thống sẽ lấy lịch gốc của ca này làm mẫu để tự động gán vào các tuần tiếp theo cho đến khi đủ số lượng buổi học của lớp.
+              <span className="text-slate-500 mt-0.5 block">
+                Trạng thái mặc định giúp cố định lịch học, ngăn chặn các thao tác tự động thay đổi lịch không mong muốn.
               </span>
             </div>
           </div>
 
-          {/* Thanh Điều hướng Hành động */}
+          {/* Footer Actions */}
           <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
             <button
               type="button"

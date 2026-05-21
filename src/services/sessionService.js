@@ -1,4 +1,4 @@
-import schedulingAxios from '../config/identityAxios';
+import schedulingAxios from '../config/schedulingAxios';
 
 /**
  * Lấy toàn bộ danh sách ca học (Sessions)
