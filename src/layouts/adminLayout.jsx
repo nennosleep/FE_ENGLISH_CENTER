@@ -10,13 +10,14 @@ import {
   GraduationCap,
   Award // 🔹 Import thêm icon đại diện cho Chuyên môn (Specialization)
 } from "lucide-react";
+import { useAuthContext } from "../features/auth/context/AuthContext";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
+  const { clearUser } = useAuthContext();
 
   const handleLogout = () => {
-    // Xử lý logic xóa token/hành động đăng xuất ở đây
-    console.log("Đăng xuất thành công");
+    clearUser(); // Xóa token và user khỏi state/storage
     navigate("/auth/login");
   };
 

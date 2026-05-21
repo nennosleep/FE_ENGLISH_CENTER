@@ -23,10 +23,11 @@ export default function LoginPage() {
     }
 
     try {
-      await login(username.trim(), password);
+      await login(username.trim(), password, rememberMe);
       toast.success('Đăng nhập thành công!');
-    } catch {
-      toast.error('Tên đăng nhập hoặc mật khẩu không đúng.');
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng.';
+      toast.error(errorMsg);
     }
   };
 

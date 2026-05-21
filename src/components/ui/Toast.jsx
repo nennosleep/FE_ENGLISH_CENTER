@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useMemo,
 } from 'react';
 
 /* ─── Config ──────────────────────────────────────────── */
@@ -184,13 +185,13 @@ export function ToastProvider({ children }) {
     setToasts((prev) => [...prev, { id, message, variant, duration }]);
   }, []);
 
-  const toast = {
+  const toast = useMemo(() => ({
     show,
     success: (msg, opts) => show({ message: msg, variant: 'success', ...opts }),
     error: (msg, opts) => show({ message: msg, variant: 'error', ...opts }),
     warning: (msg, opts) => show({ message: msg, variant: 'warning', ...opts }),
     info: (msg, opts) => show({ message: msg, variant: 'info', ...opts }),
-  };
+  }), [show]);
 
   return (
     <ToastContext.Provider value={toast}>
