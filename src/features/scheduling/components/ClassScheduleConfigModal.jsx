@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Save } from 'lucide-react';
-import { getAvailableClasses, updateClass } from '../../../services/classService';
+import { getAvailableClasses } from '../../../services/classService';
+// 🚀 Tích hợp các service chuyên biệt mới về cấu hình lịch lặp lại
+import { getClassSchedulePattern, saveClassSchedulePattern } from '../../../services/scheduleService';
 
 export default function ClassScheduleConfigModal({ isOpen, onClose, onSaveSuccess }) {
   const [classesList, setClassesList] = useState([]);
@@ -18,6 +20,7 @@ export default function ClassScheduleConfigModal({ isOpen, onClose, onSaveSucces
     { value: 1, label: 'Chủ Nhật' },
   ];
 
+  // 1. Tải danh sách lớp học khả dụng khi mở Modal
   useEffect(() => {
     if (isOpen) {
       const loadInitialData = async () => {
@@ -32,7 +35,32 @@ export default function ClassScheduleConfigModal({ isOpen, onClose, onSaveSucces
     }
   }, [isOpen]);
 
-  // Reset lại các lựa chọn khi đóng/mở modal
+  // 2. 🌟 BỔ SUNG: Tự động điền trước các Thứ đã lưu trong database khi chọn Lớp học
+  useEffect(() => {
+    if (!selectedClassId) {
+      setSelectedDays([]);
+      return;
+    }
+
+    const fetchCurrentPattern = async () => {
+      try {
+        // Gọi API GET chuyên biệt để lấy thông tin cấu hình lịch cũ
+        const patternData = await getClassSchedulePattern(selectedClassId);
+        if (patternData && patternData.daysOfWeek) {
+          setSelectedDays(patternData.daysOfWeek);
+        } else {
+          setSelectedDays([]);
+        }
+      } catch (err) {
+        console.error("Không thể lấy cấu hình khung lịch hiện tại của lớp:", err);
+        setSelectedDays([]); // Reset về mảng rỗng nếu lỗi hoặc chưa có cấu hình
+      }
+    };
+
+    fetchCurrentPattern();
+  }, [selectedClassId]);
+
+  // Reset toàn bộ form khi Modal đóng lại hoàn toàn
   useEffect(() => {
     if (!isOpen) {
       setSelectedClassId('');
@@ -55,16 +83,14 @@ export default function ClassScheduleConfigModal({ isOpen, onClose, onSaveSucces
 
     setIsSubmitting(true);
     try {
-      // Tìm kiếm thông tin lớp hiện tại để giữ lại các snapshot cũ nếu API yêu cầu toàn vẹn dữ liệu
-      const targetClass = classesList.find(c => c.id === selectedClassId);
-      
+      // 📦 Đóng gói siêu gọn theo đúng thiết kế API: { classId, daysOfWeek }
       const payload = {
-        ...targetClass,
-        daysOfWeek: selectedDays // Chỉ cập nhật mảng các thứ (Ví dụ: [2, 4, 6])
+        classId: selectedClassId,
+        daysOfWeek: selectedDays
       };
 
-      // Đẩy gói tin qua API updateClass của classService
-      await updateClass(selectedClassId, payload);
+      // 🚀 Gọi API PUT mới để lưu/cập nhật cấu hình
+      await saveClassSchedulePattern(payload);
       onSaveSuccess();
     } catch (error) {
       alert("Lỗi khi cấu hình ngày học lặp lại: " + error.message);
