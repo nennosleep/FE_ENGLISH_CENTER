@@ -95,3 +95,20 @@ export const toggleLockSession = async (id) => {
   const response = await schedulingAxios.patch(`/sessions/${id}/toggle-lock`);
   return response.data;
 };
+
+/**
+ * Tạo chuỗi lịch học hàng loạt cho khóa học (Bulk Spread)
+ * Kết nối trực tiếp tới Endpoint định nghĩa @PostMapping("/bulk") ở Backend
+ * @param {object} bulkPayload - Chứa cấu trúc DTO cần rải lịch chuỗi hàng loạt
+ * @returns {Promise<object>} Phản hồi kết quả thành công/thất bại từ hệ thống
+ */
+export const createBulkSession = async (bulkPayload) => {
+  try {
+    const response = await schedulingAxios.post('/sessions/bulk', bulkPayload);
+    return response.data; // Trả về cấu trúc ApiResponse định dạng ở Backend
+  } catch (error) {
+    console.error("Lỗi xảy ra tại Service khi gọi API tạo chuỗi lịch hàng loạt:", error);
+    throw error;
+  }
+};
+

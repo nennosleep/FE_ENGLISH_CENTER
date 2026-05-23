@@ -108,3 +108,20 @@ export const deleteTeacher = async (id) => {
   const response = await schedulingAxios.delete(`/teachers/${id}`);
   return response.data;
 };
+
+/**
+ * Lấy danh sách giáo viên có cùng chuyên môn với một giáo viên cụ thể
+ * @param {string} teacherId
+ */
+export const getColleaguesByTeacherId = async (teacherId) => {
+  try {
+    const response = await schedulingAxios.get(`/teachers/${teacherId}/colleagues`);
+    return response.data.data || [];
+  } catch (error) {
+    console.error(
+      `Lỗi khi lấy danh sách đồng nghiệp cùng chuyên môn cho teacherId ${teacherId}:`,
+      error
+    );
+    throw error;
+  }
+};
