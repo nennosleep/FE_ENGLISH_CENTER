@@ -28,10 +28,9 @@ import TeacherLayout from "../layouts/TeacherLayout";
 // Scheduling pages
 import CourseListPage from "../features/scheduling/pages/CourseListPage";
 import ClassListPage from "../features/scheduling/pages/ClassListPage";
-import ClassSetupPage from "../features/scheduling/pages/ClassSetupPage";
 import CalendarSchedulerPage from "../features/scheduling/pages/CalendarSchedulerPage";
 import SpecializationListPage from "../features/scheduling/pages/SpecializationListPage";
-
+import RoomListPage from "../features/scheduling/pages/RoomListPage";
 // Admin pages
 import TeacherListPage from "../features/scheduling/pages/TeacherListPage";
 
@@ -170,16 +169,15 @@ const router = createBrowserRouter([
             element: <ClassListPage />,
           },
 
-          {
-            path: "class-setup",
-            element: <ClassSetupPage />,
-          },
 
           {
             path: "scheduler",
             element: <CalendarSchedulerPage />,
           },
-
+          {
+            path: "rooms",
+            element: <RoomListPage />,
+          },
           {
             path: "specializations",
             element: <SpecializationListPage />,

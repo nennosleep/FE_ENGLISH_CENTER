@@ -1,12 +1,19 @@
 import schedulingAxios from '../config/schedulingAxios'; 
-// Lưu ý: Bạn kiểm tra lại xem file identityAxios nằm ở đâu nhé. 
-// Nếu identityAxios nằm ở src/config/identityAxios.js thì sửa thành: import schedulingAxios from '../config/identityAxios';
 
 /**
- * Lấy danh sách toàn bộ phòng học (Đổ vào Dropdown chọn phòng)
+ * Lấy danh sách toàn bộ phòng học (Đổ vào bảng quản lý tổng quan)
  */
 export const getRooms = async () => {
   const response = await schedulingAxios.get('/rooms');
+  return response.data.data;
+};
+
+/**
+ * 🚀 BỔ SUNG: Lấy danh sách phòng học đang ở trạng thái ACTIVE 
+ * Thường dùng để đổ vào các ô Dropdown/Select khi xếp lịch học mới, tránh chọn phải phòng đang bảo trì
+ */
+export const getActiveRooms = async () => {
+  const response = await schedulingAxios.get('/rooms/active');
   return response.data.data;
 };
 
@@ -31,3 +38,12 @@ export const getRoomUtilization = async (roomId, weekStartDate) => {
   return response.data.data;
 };
 
+export const createRoom = async (roomData) => {
+  const response = await schedulingAxios.post('/rooms', roomData);
+  return response.data.data;
+};
+
+export const updateRoom = async (id, roomData) => {
+  const response = await schedulingAxios.put(`/rooms/${id}`, roomData);
+  return response.data.data;
+};

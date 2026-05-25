@@ -1,5 +1,17 @@
 import schedulingAxios from '../config/schedulingAxios';
 
+export const getAllClasses = async () => {
+  const response = await schedulingAxios.get('/classes');
+  return response.data.data;
+};
+/**
+ * Lấy chi tiết thông tin khóa học của một lớp cụ thể
+ * @param {string} classId - UUID của lớp học
+ */
+export const getCourseByClassId = async (classId) => {
+  const response = await schedulingAxios.get(`/classes/${classId}/course`);
+  return response.data.data;
+};
 /**
  * Lấy danh sách các lớp học đang mở để gán lịch trong Modal
  */
@@ -51,4 +63,10 @@ export const createClassSchedulePattern = async (classId, daysOfWeek) => {
   // Gửi lệnh PUT lên backend để xóa lịch cũ (nếu có) và tạo mới loạt bản ghi Thứ vừa chọn
   const response = await schedulingAxios.put('/class-schedules/pattern', payload);
   return response.data; // Trả về ApiResponse tổng thể (chứa code: 1000, message: "Success")
+};
+
+
+export const getClassesWithoutTeacher = async () => {
+    const response = await schedulingAxios.get('/classes/unassignedTeacher-classes');
+    return response.data.data; // Trả về mảng danh sách lớp gọn gàng
 };

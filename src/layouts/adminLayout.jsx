@@ -23,43 +23,46 @@ export default function AdminLayout() {
 
   // Danh sách các menu điều hướng ở Sidebar Admin (ĐÃ THÊM MỤC CHUYÊN MÔN)
   const menuItems = [
-    {
-      path: "/admin",
-      name: "Bảng điều khiển",
-      icon: <LayoutDashboard size={20} />,
-      end: true // Chỉ active chính xác khi ở trang chủ /admin
-    },
-    {
-      path: "/admin/courses",
-      name: "Quản lý khóa học",
-      icon: <BookOpen size={20} />
-    },
-    {
-      path: "/admin/classes", 
-      name: "Quản lý lớp học",
-      icon: <GraduationCap size={20} />
-    },
-    {
-      path: "/admin/class-setup",
-      name: "Thiết lập lớp học",
-      icon: <SlidersHorizontal size={20} />
-    },
-    {
-      path: "/admin/scheduler",
-      name: "Điều hành lịch dạy",
-      icon: <CalendarDays size={20} />
-    },
-    {
-      path: "/admin/specializations", // 🔹 ĐƯỜNG DẪN ĐẾN TRANG QUẢN LÝ CHUYÊN MÔN MỚI
-      name: "Danh mục chuyên môn",
-      icon: <Award size={20} />
-    },
-    {
-      path: "/admin/teachers",
-      name: "Quản lý giảng viên",
-      icon: <UserCheck size={20} />
-    }
-  ];
+  {
+    path: "/admin",
+    name: "Bảng điều khiển",
+    icon: <LayoutDashboard size={20} />,
+    end: true
+  },
+  {
+    path: "/admin/courses",
+    name: "Quản lý khóa học",
+    icon: <BookOpen size={20} />
+  },
+  {
+    path: "/admin/classes",
+    name: "Quản lý lớp học",
+    icon: <GraduationCap size={20} />
+  },
+
+  // 🔥 NEW: ROOM MANAGEMENT
+  {
+    path: "/admin/rooms",
+    name: "Quản lý phòng học",
+    icon: <SlidersHorizontal size={20} />
+  },
+
+  {
+    path: "/admin/scheduler",
+    name: "Điều hành lịch dạy",
+    icon: <CalendarDays size={20} />
+  },
+  {
+    path: "/admin/specializations",
+    name: "Danh mục chuyên môn",
+    icon: <Award size={20} />
+  },
+  {
+    path: "/admin/teachers",
+    name: "Quản lý giảng viên",
+    icon: <UserCheck size={20} />
+  }
+];
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans antialiased text-slate-800">

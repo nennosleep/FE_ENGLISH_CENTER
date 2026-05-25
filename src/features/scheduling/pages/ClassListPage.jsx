@@ -1,42 +1,59 @@
 import React, { useEffect, useState } from 'react';
 import {
   Search,
-  Pencil,
   ChevronLeft,
   ChevronRight,
   Calendar,
   Users,
-  GraduationCap
+  GraduationCap,
+  Plus,
+  Loader2
 } from 'lucide-react';
 
-// Import các hàm lấy danh sách lớp và trạng thái lịch học từ service
-import { getAvailableClasses, getClassScheduleStatus } from '../../../services/classService';
+// Import services
+import { getCourses } from '../../../services/courseService';
+import { 
+  getAvailableClasses, 
+  getClassScheduleStatus 
+} from '../../../services/classService';
+
+// Import component Modal mới bóc tách
+import ClassFormModal from '../../scheduling/components/ClassFormModal';
 
 export default function ClassListPage() {
-  // --- STATES QUẢN LÝ DỮ LIỆU & BỘ LỌC ---
+  // --- STATES QUẢN LÝ DANH SÁCH & BỘ LỌC ---
   const [classes, setClasses] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Bộ lọc trạng thái xếp lịch của lớp (ALL | UNASSIGNED | ASSIGNED)
   const [scheduleFilter, setScheduleFilter] = useState('ALL');
-  
-  // State lưu trữ ID của các lớp để lookup trạng thái xếp lịch nhanh với Set
   const [unassignedClassIds, setUnassignedClassIds] = useState(new Set());
   const [assignedClassIds, setAssignedClassIds] = useState(new Set());
 
-  // --- STATES PHỤC VỤ PHÂN TRANG ---
+  // --- STATES QUẢN LÝ PHÂN TRANG ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
+  // --- STATES QUẢN LÝ TRẠNG THÁI MODAL MỚI ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('CREATE'); // 'CREATE' hoặc 'EDIT'
+  const [selectedClass, setSelectedClass] = useState(null); // Lưu data hàng được chọn khi Sửa
+  
+  // --- STATES TRẠNG THÁI LOADING ---
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
+  // --- EFFECT KHỞI TẠO ---
   useEffect(() => {
     fetchClassesAndScheduleStatus();
+    loadCourses();
   }, []);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, scheduleFilter]);
 
+  // --- HÀM TẢI DỮ LIỆU ---
   const fetchClassesAndScheduleStatus = async () => {
+    setIsLoadingData(true);
     try {
       const [classesData, scheduleStatusData] = await Promise.all([
         getAvailableClasses(),
@@ -54,13 +71,36 @@ export default function ClassListPage() {
     } catch (error) {
       console.error('Lỗi khi lấy dữ liệu lớp học và trạng thái lịch:', error);
       setClasses([]);
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
-  // 1. Định dạng hiển thị Trạng thái vận hành lớp (Ẩn khi gặp trường hợp null/chưa thiết lập)
-  const renderStatusBadge = (status) => {
-    if (!status) return null; // Bỏ chữ "Chưa thiết lập", không render gì cả
+  const loadCourses = async () => {
+    try {
+      const coursesData = await getCourses();
+      setCourses(coursesData || []);
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách khóa học:', error);
+    }
+  };
 
+  // --- ĐIỀU KHIỂN ĐÓNG MỞ MODAL ---
+  const openCreateModal = () => {
+    setModalMode('CREATE');
+    setSelectedClass(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (cls) => {
+    setModalMode('EDIT');
+    setSelectedClass(cls);
+    setIsModalOpen(true);
+  };
+
+  // --- RENDER BADGES & FORMATTERS ---
+  const renderStatusBadge = (status) => {
+    if (!status) return null;
     switch (status) {
       case 'UPCOMING':
         return <span className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60 shadow-2xs">Sắp khai giảng</span>;
@@ -73,7 +113,6 @@ export default function ClassListPage() {
     }
   };
 
-  // 2. Định dạng hiển thị Trạng thái xếp lịch (Sử dụng indicator dot sang trọng, tối giản)
   const renderScheduleStatusBadge = (classId) => {
     if (unassignedClassIds.has(classId)) {
       return (
@@ -94,14 +133,13 @@ export default function ClassListPage() {
     return null;
   };
 
-  // Định dạng ngày hiển thị (YYYY-MM-DD -> DD/MM/YYYY)
   const formatDate = (dateString) => {
     if (!dateString) return '---';
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;
   };
 
-  // --- LOGIC LỌC TÌM KIẾM THEO XẾP LỊCH & PHÂN TRANG ---
+  // --- LOGIC LỌC TÌM KIẾM ---
   const filteredClasses = classes.filter((item) => {
     const matchesSearch =
       item.classCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -123,23 +161,36 @@ export default function ClassListPage() {
   const currentClasses = filteredClasses.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative min-h-screen">
       
-      {/* TIÊU ĐỀ TRANG CON */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Danh sách lớp học</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Quản lý thông tin lớp học, thời gian đào tạo và theo dõi tiến độ phân bố lịch học học viên.
-        </p>
+      {/* TIÊU ĐỀ TRANG CON & NÚT THÊM MỚI */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Danh sách lớp học</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Quản lý thông tin lớp học, thời gian đào tạo và theo dõi tiến độ phân bố lịch học học viên.
+          </p>
+        </div>
+        <button
+          onClick={openCreateModal}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-xs flex items-center justify-center gap-2 transition whitespace-nowrap self-start sm:self-auto"
+        >
+          <Plus size={18} />
+          Khởi tạo lớp mới
+        </button>
       </div>
 
       {/* KHUNG CHỨA BẢNG VÀ THANH CÔNG CỤ */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col relative">
+        {isLoadingData && (
+          <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-center z-20">
+            <Loader2 size={28} className="animate-spin text-blue-600" />
+          </div>
+        )}
 
         {/* THANH BỘ LỌC TÌM KIẾM */}
         <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-            {/* Ô tìm kiếm */}
             <div className="relative w-full max-w-xl">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
@@ -151,7 +202,6 @@ export default function ClassListPage() {
               />
             </div>
 
-            {/* Dropdown lọc theo trạng thái lịch */}
             <select
               value={scheduleFilter}
               onChange={(e) => setScheduleFilter(e.target.value)}
@@ -181,14 +231,12 @@ export default function ClassListPage() {
             <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-600">
               {currentClasses.map((cls) => (
                 <tr key={cls.id} className="hover:bg-slate-50/40 transition">
-                  {/* Mã Lớp */}
                   <td className="py-4 px-6">
                     <span className="text-blue-600 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 border border-blue-100/70">
                       {cls.classCode}
                     </span>
                   </td>
 
-                  {/* Tên Khóa Học */}
                   <td className="py-4 px-6 text-slate-900 font-bold max-w-xs">
                     <div className="flex items-center gap-2">
                       <GraduationCap size={18} className="text-slate-400 shrink-0" />
@@ -198,7 +246,6 @@ export default function ClassListPage() {
                     </div>
                   </td>
                   
-                  {/* Thời gian học */}
                   <td className="py-4 px-6 text-slate-500 font-normal text-xs">
                     <div className="flex items-center gap-1.5">
                       <Calendar size={14} className="text-slate-400" />
@@ -208,7 +255,6 @@ export default function ClassListPage() {
                     </div>
                   </td>
 
-                  {/* Dung lượng Min/Max */}
                   <td className="py-4 px-6 text-slate-600 font-normal">
                     <div className="flex items-center gap-1.5 text-xs">
                       <Users size={14} className="text-slate-400" />
@@ -218,7 +264,6 @@ export default function ClassListPage() {
                     </div>
                   </td>
 
-                  {/* CỘT TRẠNG THÁI GỘP SANG TRỌNG */}
                   <td className="py-4 px-6">
                     <div className="flex flex-wrap items-center gap-2">
                       {renderScheduleStatusBadge(cls.id)}
@@ -226,11 +271,10 @@ export default function ClassListPage() {
                     </div>
                   </td>
 
-                  {/* Thao tác Chỉnh sửa */}
                   <td className="py-4 px-6">
                     <div className="flex items-center justify-center">
                       <button 
-                        onClick={() => alert(`Chỉnh sửa lớp: ${cls.classCode}`)} 
+                        onClick={() => openEditModal(cls)} 
                         className="text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs transition font-bold shadow-2xs hover:text-slate-900"
                       >
                         Cập nhật
@@ -297,6 +341,17 @@ export default function ClassListPage() {
           )}
         </div>
       </div>
+
+      {/* COMPONENT MODAL SAU KHI ĐÃ TÁCH */}
+      <ClassFormModal
+        isOpen={isModalOpen}
+        mode={modalMode}
+        initialData={selectedClass}
+        courses={courses}
+        classes={classes}
+        onClose={() => setIsModalOpen(false)}
+        onRefreshData={fetchClassesAndScheduleStatus}
+      />
     </div>
   );
 }
