@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { X, Loader2, Home, Users, Save, RotateCcw } from 'lucide-react';
+import { X, Loader2, Home, Users, Save, RotateCcw, AlertTriangle } from 'lucide-react';
 
-import { createRoom, updateRoom } from '../../../services/roomService';
-
+import { toast } from 'react-hot-toast'; // Đảm bảo bạn đã cài: npm install react-hot-toast
+import { createRoom, updateRoom, markRoomAsMaintenance } from '../../../services/roomService';
 const INITIAL_FORM = {
   roomCode: '',
   name: '',
@@ -45,52 +45,57 @@ export default function RoomFormModal({
     }));
   };
 
-  const handleReset = () => {
-    setForm(INITIAL_FORM);
-  };
+  const handleReset = () => setForm(INITIAL_FORM);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
 
     if (!form.roomCode || !form.name || !form.capacity) {
-      alert('Vui lòng nhập đầy đủ thông tin');
+      toast.error('Vui lòng nhập đầy đủ thông tin');
       return;
     }
 
     setLoading(true);
 
     try {
-      const payload = {
-        ...form,
-        capacity: Number(form.capacity)
-      };
-
       if (mode === 'CREATE') {
-        await createRoom(payload);
+        await createRoom({ ...form, capacity: Number(form.capacity) });
+        toast.success("Khởi tạo phòng thành công!");
       } else {
-        await updateRoom(initialData.id, payload);
+        // NẾU CHUYỂN SANG BẢO TRÌ: Gọi service riêng
+        if (form.status === 'MAINTENANCE' && initialData.status !== 'MAINTENANCE') {
+          await markRoomAsMaintenance(initialData.id);
+          toast.success("Đã chuyển phòng sang trạng thái bảo trì!");
+        } 
+        // NẾU CẬP NHẬT THÔNG TIN THƯỜNG:
+        else {
+          await updateRoom(initialData.id, { 
+            ...form, 
+            capacity: Number(form.capacity) 
+          });
+          toast.success("Cập nhật phòng thành công!");
+        }
       }
 
       onRefresh?.();
       onClose?.();
     } catch (err) {
-      console.error(err);
-      alert('Có lỗi xảy ra khi lưu thông tin');
+      const errorCode = err.response?.data?.code;
+      
+      if (errorCode === 2003) {
+        toast.error("Không thể bảo trì: Phòng vẫn còn lịch học trong tương lai, vui lòng chuyển lớp trước!");
+      } else {
+        toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi lưu thông tin');
+      }
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* BACKDROP */}
-      <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
 
-      {/* MODAL */}
       <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
         {/* HEADER */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -99,74 +104,58 @@ export default function RoomFormModal({
               {mode === 'CREATE' ? 'Khởi tạo phòng học' : 'Cập nhật phòng học'}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {mode === 'CREATE'
-                ? 'Thêm phòng học mới vào hệ thống'
-                : `Chỉnh sửa phòng ${form.roomCode}`}
+              {mode === 'CREATE' ? 'Thêm phòng mới vào danh mục' : `Đang chỉnh sửa mã: ${form.roomCode}`}
             </p>
           </div>
-
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-slate-600"
-          >
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-50 text-slate-400">
             <X size={20} />
           </button>
         </div>
 
         {/* FORM */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8">
-          {/* SECTION 1 */}
+          {/* PHẦN THÔNG TIN CƠ BẢN */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-blue-900 uppercase flex items-center gap-2 tracking-wider">
-              <Home size={16} />
-              Thông tin phòng học
+            <h3 className="text-xs font-bold text-blue-900 uppercase flex items-center gap-2">
+              <Home size={16} /> Thông tin phòng học
             </h3>
-
-            {/* ROOM CODE */}
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">
-                Mã phòng
-              </label>
-              <input
-                name="roomCode"
-                value={form.roomCode}
-                onChange={handleChange}
-                disabled={mode === 'EDIT'}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm disabled:bg-slate-100"
-                placeholder="VD: ROOM-101"
-              />
-            </div>
-
-            {/* NAME */}
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">
-                Tên phòng
-              </label>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                placeholder="VD: Phòng A1"
-              />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 md:col-span-1">
+                <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">Mã phòng</label>
+                <input
+                  name="roomCode"
+                  value={form.roomCode}
+                  onChange={handleChange}
+                  disabled={mode === 'EDIT'}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm disabled:bg-slate-100"
+                  placeholder="VD: ROOM-101"
+                />
+              </div>
+              <div className="col-span-2 md:col-span-1">
+                <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">Tên phòng</label>
+                <input
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                  placeholder="VD: Phòng A1"
+                />
+              </div>
             </div>
           </div>
 
           <hr className="border-slate-100" />
 
-          {/* SECTION 2 */}
+          {/* PHẦN CẤU HÌNH */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-blue-900 uppercase flex items-center gap-2 tracking-wider">
-              <Users size={16} />
-              Sức chứa & Trạng thái
+            <h3 className="text-xs font-bold text-blue-900 uppercase flex items-center gap-2">
+              <Users size={16} /> Cấu hình trạng thái
             </h3>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* CAPACITY */}
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">
-                  Sức chứa
-                </label>
+                <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">Sức chứa</label>
                 <input
                   type="number"
                   name="capacity"
@@ -176,12 +165,8 @@ export default function RoomFormModal({
                   placeholder="0"
                 />
               </div>
-
-              {/* STATUS (Đã dọn dẹp phần trùng lặp) */}
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">
-                  Trạng thái
-                </label>
+                <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">Trạng thái</label>
                 <select
                   name="status"
                   value={form.status}
@@ -194,37 +179,38 @@ export default function RoomFormModal({
                 </select>
               </div>
             </div>
+
+            {form.status === 'MAINTENANCE' && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex gap-2 items-start">
+                <AlertTriangle className="text-amber-600 shrink-0" size={18} />
+                <p className="text-[11px] text-amber-800">
+                  Hệ thống sẽ tự động kiểm tra lịch học. Nếu phòng vẫn còn lớp trong tương lai, thao tác này sẽ bị từ chối.
+                </p>
+              </div>
+            )}
           </div>
         </form>
 
         {/* FOOTER */}
-        <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
+        <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
           {mode === 'CREATE' && (
             <button
               type="button"
               onClick={handleReset}
-              className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 flex items-center gap-2"
+              className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold hover:bg-white flex items-center gap-2"
             >
-              <RotateCcw size={15} />
-              Làm mới
+              <RotateCcw size={15} /> Làm mới
             </button>
           )}
-
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2"
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition"
           >
             {loading ? (
-              <>
-                <Loader2 className="animate-spin" size={16} />
-                Đang xử lý
-              </>
+              <><Loader2 className="animate-spin" size={16} /> Đang xử lý</>
             ) : (
-              <>
-                <Save size={16} />
-                {mode === 'CREATE' ? 'Tạo phòng' : 'Lưu thay đổi'}
-              </>
+              <><Save size={16} /> {mode === 'CREATE' ? 'Khởi tạo phòng' : 'Lưu thay đổi'}</>
             )}
           </button>
         </div>

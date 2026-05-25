@@ -47,3 +47,62 @@ export const updateRoom = async (id, roomData) => {
   const response = await schedulingAxios.put(`/rooms/${id}`, roomData);
   return response.data.data;
 };
+
+/**
+ * 🚀 BỔ SUNG: Lấy danh sách các phòng khả dụng (phòng trống)
+ * Dùng cho tính năng "Đổi phòng" trong Modal.
+ * @param {string} date - Ngày học (định dạng YYYY-MM-DD)
+ * @param {string} timeSlotId - UUID của ca học
+ */
+export const getAvailableRoomsForSession = async (date, timeSlotId) => {
+  try {
+    const response = await schedulingAxios.get('/rooms/available', {
+      params: { 
+        date, 
+        timeSlotId 
+      }
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách phòng trống:", error);
+    throw error;
+  }
+};
+
+/**
+ * 🚀 BỔ SUNG: Lấy danh sách các phòng khả dụng cho toàn bộ chuỗi lịch còn lại của lớp
+ * Dùng để lọc danh sách phòng trước khi thực hiện batch update, 
+ * đảm bảo không chọn phải phòng bị trùng lịch ở bất kỳ buổi nào.
+ * * @param {string} classId - UUID của lớp học
+ * @param {string} startDate - Ngày bắt đầu (YYYY-MM-DD)
+ */
+export const getAvailableRoomsForBatchUpdateSessions = async (classId, startDate) => {
+  try {
+    const response = await schedulingAxios.get('/rooms/available-for-batch', {
+      params: { 
+        classId, 
+        startDate 
+      }
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách phòng khả dụng cho batch:", error);
+    throw error;
+  }
+};
+
+/**
+ * 🚀 BỔ SUNG: Chuyển trạng thái phòng sang BẢO TRÌ (MAINTENANCE)
+ * Hàm này sẽ thực hiện kiểm tra ràng buộc ở Backend trước khi thay đổi trạng thái.
+ * @param {string} roomId - UUID của phòng học cần bảo trì
+ */
+export const markRoomAsMaintenance = async (roomId) => {
+  try {
+    // Gọi đến API để thực hiện logic: Kiểm tra lịch trống -> Chuyển status
+    const response = await schedulingAxios.patch(`/rooms/${roomId}/maintenance`);
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi chuyển trạng thái bảo trì phòng:", error);
+    throw error; // Ném lỗi để Component bắt và hiển thị thông báo
+  }
+};
