@@ -112,3 +112,21 @@ export const createBulkSession = async (bulkPayload) => {
   }
 };
 
+
+/**
+ * 🚀 BỔ SUNG: Cập nhật phòng học hàng loạt cho các buổi học tương lai của một lớp
+ * Dùng cho tính năng "Đổi phòng toàn bộ các buổi học còn lại"
+ * * @param {Object} payload 
+ * @param {string} payload.classId - UUID của lớp học
+ * @param {string} payload.startDate - Ngày bắt đầu áp dụng (YYYY-MM-DD)
+ * @param {string} payload.newRoomId - UUID của phòng học mới
+ */
+export const batchUpdateRoomForSessions = async (payload) => {
+  try {
+    const response = await schedulingAxios.patch('/sessions/batch-update-room', payload);
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi cập nhật phòng hàng loạt:", error);
+    throw error;
+  }
+};
