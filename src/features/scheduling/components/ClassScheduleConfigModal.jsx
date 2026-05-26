@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Save } from 'lucide-react';
-import { getAvailableClasses } from '../../../services/classService';
+// Thay vì import { getAvailableClasses } ...
+import { getClassesWithoutSchedule } from '../../../services/classService';
 // 🚀 Tích hợp các service chuyên biệt mới về cấu hình lịch lặp lại
 import { getClassSchedulePattern, saveClassSchedulePattern } from '../../../services/scheduleService';
 
@@ -21,14 +22,15 @@ const daysConfig = [
 ];
 
   // 1. Tải danh sách lớp học khả dụng khi mở Modal
-  useEffect(() => {
+useEffect(() => {
     if (isOpen) {
       const loadInitialData = async () => {
         try {
-          const cls = await getAvailableClasses();
+          // Gọi service mới thay cho getAvailableClasses
+          const cls = await getClassesWithoutSchedule();
           setClassesList(cls || []);
         } catch (err) {
-          console.error("Lỗi tải dữ liệu danh sách lớp học:", err);
+          console.error("Lỗi tải danh sách lớp chưa có lịch:", err);
         }
       };
       loadInitialData();

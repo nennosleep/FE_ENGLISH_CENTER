@@ -70,3 +70,11 @@ export const getClassesWithoutTeacher = async () => {
     const response = await schedulingAxios.get('/classes/unassignedTeacher-classes');
     return response.data.data; // Trả về mảng danh sách lớp gọn gàng
 };
+
+/**
+ * Lấy danh sách các lớp học hiện chưa được cấu hình lịch (classSchedules)
+ */
+export const getClassesWithoutSchedule = async () => {
+  const response = await schedulingAxios.get('/classes/without-schedule');
+  return response.data.data;
+};
