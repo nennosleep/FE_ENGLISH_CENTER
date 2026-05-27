@@ -31,11 +31,13 @@ export function AuthProvider({ children }) {
   // Đăng nhập: lưu data vào state + storage (tùy thuộc vào rememberMe)
   const saveUser = useCallback((loginData, rememberMe = false) => {
     const userData = {
-      accountId: loginData.accountId,
-      username:  loginData.username,
-      email:     loginData.email,
-      roles:     loginData.roles ?? [],
-      status:    loginData.status,
+      accountId: loginData?.accountId,
+      username: loginData?.username,
+      name: loginData?.fullName || loginData?.username,
+      email: loginData?.email,
+      teacherId: loginData?.teacherId,
+      roles: loginData?.roles || [],
+      status: loginData.status,
     };
     
     const storage = rememberMe ? localStorage : sessionStorage;
@@ -63,14 +65,43 @@ export function AuthProvider({ children }) {
   // Kiểm tra token còn hợp lệ không (đơn giản: check có token không)
   const isAuthenticated = Boolean(user && (localStorage.getItem('token') || sessionStorage.getItem('token')));
 
-  // Kiểm tra user có role cụ thể không
+  // Kiểm tra user có role cụ thể không (hỗ trợ truyền mảng roles và match tương đối, vd: TEACHER sẽ match TEACHER_TOEIC)
   const hasRole = useCallback(
-    (role) => user?.roles?.includes(role) ?? false,
+    (roleOrRoles) => {
+      if (!user?.roles) return false;
+      
+      const checkRole = (requiredRole) => {
+        // Bỏ tiền tố ROLE_ nếu có để so sánh linh hoạt
+        const cleanRequired = requiredRole.replace(/^ROLE_/, '');
+        return user.roles.some(userRole => {
+          const cleanUser = userRole.replace(/^ROLE_/, '');
+          return cleanUser.includes(cleanRequired);
+        });
+      };
+
+      if (Array.isArray(roleOrRoles)) {
+        return roleOrRoles.some(checkRole);
+      }
+      return checkRole(roleOrRoles);
+    },
     [user]
   );
 
+  const updateUser = useCallback((updates) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updatedUser = { ...prev, ...updates };
+      // Keep storage in sync
+      const rawSession = sessionStorage.getItem(STORAGE_KEY);
+      if (rawSession) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+      const rawLocal = localStorage.getItem(STORAGE_KEY);
+      if (rawLocal) localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, saveUser, clearUser, hasRole }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, saveUser, clearUser, hasRole, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

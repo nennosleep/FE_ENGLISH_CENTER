@@ -122,6 +122,39 @@ export default function TeacherListPage() {
   /* Phân trang dùng chung hook */
   const { currentPage, totalPages, totalItems, pageSize, paginated, setPage } = usePagination(filtered, 10);
 
+  /* ── Hàm dịch lỗi Backend sang Tiếng Việt ── */
+  const getVietnameseError = (error, defaultMsg) => {
+    const msg = error?.response?.data?.message?.toLowerCase() || '';
+    const status = error?.response?.status;
+    if (!msg && !status) return defaultMsg;
+    
+    // Lỗi trùng lặp dữ liệu
+    if (msg.includes('email') && (msg.includes('exist') || msg.includes('duplicate') || msg.includes('already'))) return 'Email này đã được sử dụng bởi giảng viên khác.';
+    if (msg.includes('phone') && (msg.includes('exist') || msg.includes('duplicate') || msg.includes('already'))) return 'Số điện thoại này đã được sử dụng bởi giảng viên khác.';
+    if (msg.includes('username') && (msg.includes('exist') || msg.includes('duplicate') || msg.includes('already'))) return 'Tên đăng nhập này đã tồn tại trong hệ thống.';
+    if (msg.includes('code') && (msg.includes('exist') || msg.includes('duplicate') || msg.includes('already'))) return 'Mã giảng viên đã tồn tại trong hệ thống.';
+    
+    // Lỗi không tìm thấy
+    if (msg.includes('not found') || msg.includes('not exist')) return 'Không tìm thấy giảng viên trong hệ thống.';
+    
+    // Lỗi validation từ BE
+    if (msg.includes('invalid') && msg.includes('email')) return 'Định dạng email không hợp lệ.';
+    if (msg.includes('invalid') && msg.includes('phone')) return 'Định dạng số điện thoại không hợp lệ.';
+    if (msg.includes('required') || msg.includes('blank') || msg.includes('empty')) return 'Vui lòng điền đầy đủ các trường bắt buộc.';
+    if (msg.includes('invalid')) return 'Dữ liệu nhập vào không hợp lệ. Vui lòng kiểm tra lại.';
+    
+    // Lỗi quyền & xác thực
+    if (status === 401) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+    if (status === 403) return 'Bạn không có quyền thực hiện thao tác này.';
+    if (status === 500) return 'Lỗi hệ thống phía máy chủ. Vui lòng thử lại sau.';
+    if (status === 409) return 'Dữ liệu bị xung đột. Có thể thông tin đã tồn tại trong hệ thống.';
+    
+    // Lỗi mạng
+    if (!error?.response) return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+    
+    return defaultMsg;
+  };
+
   /* ── Submit (Thêm/Sửa API) ── */
   const handleSubmit = async (form) => {
     setIsSubmitting(true);
@@ -140,9 +173,12 @@ export default function TeacherListPage() {
         toast.success('Cập nhật thông tin giảng viên thành công.');
       } else {
         payload.email = form.email;
-        payload.teacherCode = 'GV' + Date.now().toString().slice(-4); // Sinh mã tạm để qua validate BE
+        const generatedCode = 'TEC_' + Date.now().toString().slice(-4);
+        payload.teacherCode = generatedCode;
+        payload.username = generatedCode;
+        payload.password = generatedCode;
         await createTeacher(payload);
-        toast.success('Thêm giảng viên mới thành công.');
+        toast.success('Thêm giảng viên mới thành công. Tài khoản/Mật khẩu mặc định là: ' + generatedCode);
       }
       
       setModalOpen(false);
@@ -150,7 +186,7 @@ export default function TeacherListPage() {
       const newTeachers = await getAllTeachers();
       setTeachers(newTeachers || []);
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Lỗi khi lưu thông tin giảng viên.');
+      toast.error(getVietnameseError(error, 'Lỗi khi lưu thông tin giảng viên.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -183,7 +219,7 @@ export default function TeacherListPage() {
       setTeachers(newTeachers || []);
       setConfirmConfig({ isOpen: false, teacher: null, isLoading: false });
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Lỗi khi khóa giảng viên.');
+      toast.error(getVietnameseError(error, 'Lỗi khi khóa giảng viên.'));
       setConfirmConfig(prev => ({ ...prev, isLoading: false }));
     }
   };

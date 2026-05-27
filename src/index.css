@@ -5,3 +5,9 @@ body {
   padding: 0;
   box-sizing: border-box;
 }
+
+/* Ẩn icon con mắt mặc định của Microsoft Edge */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}

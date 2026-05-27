@@ -6,11 +6,17 @@ import { useAuthContext } from '../features/auth/context/AuthContext';
  * AuthLayout — Khung bố cục cho tất cả các trang xác thực.
  */
 export default function AuthLayout() {
-  const { isAuthenticated } = useAuthContext();
+  const { user, isAuthenticated } = useAuthContext();
 
-  // Nếu đã đăng nhập mà lại truy cập vào /auth/login hoặc / -> Chuyển thẳng vào admin
+  // Nếu đã đăng nhập mà lại truy cập vào /auth/login hoặc / -> Chuyển thẳng vào đúng dashboard
   if (isAuthenticated) {
-    return <Navigate to="/admin" replace />;
+    const roles = user?.roles || [];
+    if (roles.some(r => r.includes('ACADEMIC_STAFF'))) {
+      return <Navigate to="/admin" replace />;
+    } else if (roles.some(r => r.includes('TEACHER'))) {
+      return <Navigate to="/teacher" replace />;
+    }
+    // Nếu không có role hợp lệ nhưng vẫn authenticated, cứ để họ ở login để tránh loop (hoặc xóa AuthContext nếu lỗi)
   }
 
   return (

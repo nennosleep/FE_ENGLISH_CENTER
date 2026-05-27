@@ -33,10 +33,11 @@ import SpecializationListPage from "../features/scheduling/pages/SpecializationL
 import RoomListPage from "../features/scheduling/pages/RoomListPage";
 // Admin pages
 import TeacherListPage from "../features/scheduling/pages/TeacherListPage";
+import AdminDashboardPage from "../features/scheduling/pages/AdminDashboardPage";
 
 // Teacher UI pages
-import TeacherOverviewPage from "../features/teachers/pages/TeacherOverviewPage";
 import TeacherDashboardPage from "../features/teachers/pages/TeacherDashboardPage";
+import TeacherSchedulePage from "../features/teachers/pages/TeacherSchedulePage";
 import TeacherAssignmentPage from "../features/teachers/pages/TeacherAssignmentPage";
 import TeacherProfilePage from "../features/teachers/pages/TeacherProfilePage";
 
@@ -94,16 +95,32 @@ function RootLayout() {
   );
 }
 
+/**
+ * Redirect dựa trên Role của người dùng
+ */
+function RoleBasedRedirect() {
+  const { user, isAuthenticated } = useAuthContext();
+  if (!isAuthenticated) return <Navigate to="/auth/login" replace />;
+  
+  const roles = user?.roles || [];
+  if (roles.some(r => r.includes('ACADEMIC_STAFF'))) {
+    return <Navigate to="/admin" replace />;
+  } else if (roles.some(r => r.includes('TEACHER'))) {
+    return <Navigate to="/teacher/dashboard" replace />;
+  }
+  return <Navigate to="/auth/login" replace />;
+}
+
 const router = createBrowserRouter([
   {
     // Root layout
     element: <RootLayout />,
 
     children: [
-      // "/" -> login
+      // "/" -> Điều hướng theo role
       {
         path: "/",
-        element: <Navigate to="/auth/login" replace />,
+        element: <RoleBasedRedirect />,
       },
 
       // =========================================
@@ -148,7 +165,7 @@ const router = createBrowserRouter([
         path: "/admin",
 
         element: (
-          <PrivateRoute>
+          <PrivateRoute requiredRole={["ROLE_ACADEMIC_STAFF"]}>
             <AdminLayout />
           </PrivateRoute>
         ),
@@ -156,7 +173,7 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Navigate to="courses" replace />,
+            element: <AdminDashboardPage />,
           },
 
           {
@@ -196,22 +213,22 @@ const router = createBrowserRouter([
       {
         path: "/teacher",
         element: (
-          <PrivateRoute>
+          <PrivateRoute requiredRole={["ROLE_TEACHER"]}>
             <TeacherLayout />
           </PrivateRoute>
         ),
         children: [
           {
             index: true,
-            element: <Navigate to="overview" replace />,
-          },
-          {
-            path: "overview",
-            element: <TeacherOverviewPage />,
+            element: <Navigate to="dashboard" replace />,
           },
           {
             path: "dashboard",
             element: <TeacherDashboardPage />,
+          },
+          {
+            path: "schedule",
+            element: <TeacherSchedulePage />,
           },
           {
             path: "assignments",

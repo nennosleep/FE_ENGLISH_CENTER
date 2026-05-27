@@ -14,11 +14,37 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  /* Dịch lỗi backend sang Tiếng Việt */
+  const getViError = (err) => {
+    const msg = err?.response?.data?.message?.toLowerCase() || '';
+    const status = err?.response?.status;
+    if (msg.includes('locked') || msg.includes('disabled')) return 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.';
+    if (msg.includes('invalid') || msg.includes('bad credentials') || msg.includes('incorrect')) return 'Tên đăng nhập hoặc mật khẩu không đúng.';
+    if (msg.includes('not found') || msg.includes('not exist')) return 'Tài khoản không tồn tại trong hệ thống.';
+    if (status === 401) return 'Tên đăng nhập hoặc mật khẩu không đúng.';
+    if (status === 403) return 'Tài khoản không có quyền truy cập.';
+    if (status === 500) return 'Lỗi hệ thống. Vui lòng thử lại sau.';
+    if (!err?.response) return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+    return 'Tên đăng nhập hoặc mật khẩu không đúng.';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!username.trim() || !password.trim()) {
-      toast.warning('Vui lòng điền đầy đủ thông tin đăng nhập.');
+    if (!username.trim()) {
+      toast.warning('Vui lòng nhập tên đăng nhập.');
+      return;
+    }
+    if (!password) {
+      toast.warning('Vui lòng nhập mật khẩu.');
+      return;
+    }
+    if (username.trim().length < 3) {
+      toast.warning('Tên đăng nhập phải có ít nhất 3 ký tự.');
+      return;
+    }
+    if (/\s/.test(username)) {
+      toast.warning('Tên đăng nhập không được chứa khoảng trắng.');
       return;
     }
 
@@ -26,8 +52,7 @@ export default function LoginPage() {
       await login(username.trim(), password, rememberMe);
       toast.success('Đăng nhập thành công!');
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng.';
-      toast.error(errorMsg);
+      toast.error(getViError(err));
     }
   };
 
@@ -48,7 +73,8 @@ export default function LoginPage() {
               className="w-full h-[42px] pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-xl text-[0.875rem] text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10 disabled:opacity-60 disabled:cursor-not-allowed placeholder:text-slate-300"
               placeholder="Nhập tên đăng nhập"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
+              maxLength={50}
               autoComplete="username"
               disabled={isLoading}
             />
@@ -77,6 +103,7 @@ export default function LoginPage() {
               placeholder="Nhập mật khẩu"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              maxLength={50}
               autoComplete="current-password"
               disabled={isLoading}
             />

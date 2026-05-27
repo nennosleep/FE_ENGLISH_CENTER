@@ -33,7 +33,7 @@ export default function ConfirmModal({
             <div className={`p-3 rounded-full shrink-0 ${
               isDanger ? 'bg-rose-100 text-rose-600' :
               isInfo ? 'bg-blue-100 text-blue-600' :
-              'bg-amber-100 text-amber-600'
+              'bg-amber-100 text-rose-600'
             }`}>
               {isInfo ? <Info size={24} /> : <AlertTriangle size={24} />}
             </div>
@@ -68,7 +68,7 @@ export default function ConfirmModal({
             className={`px-4 py-2 text-sm font-semibold text-white rounded-xl transition shadow-sm disabled:opacity-50 flex items-center justify-center min-w-[100px] ${
               isDanger ? 'bg-rose-600 hover:bg-rose-700' :
               isInfo ? 'bg-blue-600 hover:bg-blue-700' :
-              'bg-amber-600 hover:bg-amber-700'
+              'bg-rose-600 hover:bg-rose-700'
             }`}
           >
             {isLoading ? (

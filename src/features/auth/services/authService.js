@@ -31,3 +31,11 @@ export const verifyOtpApi = (email, otp) =>
  */
 export const resetPasswordApi = (email, otp, newPassword) =>
   identityAxios.post('/auth/reset-password', { email, otp, newPassword });
+
+/**
+ * Đổi mật khẩu cho user đã đăng nhập
+ * @param {string} currentPassword
+ * @param {string} newPassword
+ */
+export const changePasswordApi = (currentPassword, newPassword) =>
+  identityAxios.post('/auth/change-password', { currentPassword, newPassword });

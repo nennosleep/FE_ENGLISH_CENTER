@@ -32,9 +32,22 @@ export const useAuth = () => {
       // Lưu toàn bộ thông tin user vào context + storage
       saveUser(loginData, rememberMe);
 
-      // Redirect: quay lại trang cũ hoặc về trang mặc định
-      const from = location.state?.from?.pathname ?? '/admin/courses';
-      navigate(from, { replace: true });
+      // Xác định trang mặc định theo role
+      let defaultPath = '/';
+      const roles = loginData?.roles || [];
+      if (roles.some(r => r.includes('ACADEMIC_STAFF'))) {
+        defaultPath = '/admin/courses';
+      } else if (roles.some(r => r.includes('TEACHER'))) {
+        defaultPath = '/teacher/overview';
+      }
+
+      // Check xem 'from' có phải là trang login hay root không
+      let fromPath = location.state?.from?.pathname;
+      if (!fromPath || fromPath === '/' || fromPath === '/auth/login') {
+        fromPath = defaultPath;
+      }
+      
+      navigate(fromPath, { replace: true });
     } catch (err) {
       throw err;
     } finally {

@@ -15,7 +15,7 @@ import { useAuthContext } from '../context/AuthContext';
  *   { path: '/admin', element: <PrivateRoute><AdminLayout /></PrivateRoute> }
  */
 export default function PrivateRoute({ children, requiredRole }) {
-  const { isAuthenticated, hasRole } = useAuthContext();
+  const { user, isAuthenticated, hasRole } = useAuthContext();
   const location = useLocation();
 
   // Chưa đăng nhập
@@ -31,6 +31,13 @@ export default function PrivateRoute({ children, requiredRole }) {
 
   // Đã đăng nhập nhưng không có role yêu cầu
   if (requiredRole && !hasRole(requiredRole)) {
+    // Điều hướng về trang mặc định theo role hiện tại của user để tránh kẹt ở trang login
+    const roles = user?.roles || [];
+    if (roles.some(r => r.includes('ACADEMIC_STAFF'))) {
+      return <Navigate to="/admin/courses" replace />;
+    } else if (roles.some(r => r.includes('TEACHER'))) {
+      return <Navigate to="/teacher/overview" replace />;
+    }
     return <Navigate to="/auth/login" replace />;
   }
 

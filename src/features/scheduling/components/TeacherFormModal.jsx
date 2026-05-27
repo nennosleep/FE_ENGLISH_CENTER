@@ -16,23 +16,6 @@ const STATUS_OPTIONS = [
   { value: 'RESIGNED', label: 'Đã thôi việc' },
 ];
 
-/* ─── Giả lập danh sách chuyên môn số lượng lớn để test ─── */
-const MOCK_SPECIALIZATIONS = [
-  { id: 'spec-1', name: 'Toán cao cấp' },
-  { id: 'spec-2', name: 'Đại số tuyến tính' },
-  { id: 'spec-3', name: 'Giải tích 1 & 2' },
-  { id: 'spec-4', name: 'Cấu trúc dữ liệu & Giải thuật' },
-  { id: 'spec-5', name: 'Lập trình hướng đối tượng (OOP)' },
-  { id: 'spec-6', name: 'Phát triển Web Front-End' },
-  { id: 'spec-7', name: 'Lập trình Back-End Node.js' },
-  { id: 'spec-8', name: 'Cơ sở dữ liệu SQL/NoSQL' },
-  { id: 'spec-9', name: 'Trí tuệ nhân tạo (AI)' },
-  { id: 'spec-10', name: 'Học máy (Machine Learning)' },
-  { id: 'spec-11', name: 'An toàn thông tin mạng' },
-  { id: 'spec-12', name: 'Điện toán đám mây (AWS)' },
-  { id: 'spec-13', name: 'Phát triển ứng dụng Di động' },
-];
-
 const EMPTY_FORM = {
   teacherCode:    '',
   email:          '', // Thêm trường email
@@ -58,17 +41,18 @@ export default function TeacherFormModal({
   isViewMode = false,   // Cờ xác định chế độ Chỉ xem
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [errors, setErrors] = useState({});
 
-  // Ưu tiên lấy chuyên môn từ prop truyền vào, nếu không có thì lấy mảng mock nhiều môn để test giao diện
-  const displaySpecializations = specializations.length > 0 ? specializations : MOCK_SPECIALIZATIONS;
+  const displaySpecializations = specializations;
 
   /* Đồng bộ dữ liệu khi mở hoặc thay đổi mục tiêu chỉnh sửa */
   useEffect(() => {
     if (open) {
+      setErrors({});
       if (initialData) {
         setForm({
           teacherCode:    initialData.teacherCode    ?? '',
-          email:          initialData.email          ?? '', // Gắn email nếu BE có trả về
+          email:          initialData.email          ?? '',
           fullName:       initialData.fullName       ?? '',
           phone:          initialData.phone          ?? '',
           status:         initialData.status         ?? 'ACTIVE',
@@ -84,13 +68,42 @@ export default function TeacherFormModal({
 
   if (!open) return null;
 
-  /* ── Các hàm cập nhật State Form an toàn ── */
+  /* ── Hàm cập nhật Form + xóa lỗi realtime ── */
   const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    let value = e.target.value;
+
+    // Chặn nhập ký tự không hợp lệ ngay khi gõ
+    if (field === 'fullName') {
+      // Chỉ cho phép chữ cái (gồm Unicode tiếng Việt) và khoảng trắng, không cho số & ký tự đặc biệt
+      value = value.replace(/[^a-zA-ZÀ-ỹà-ỹĂăÂâĐđÊêÔôƠơƯư\s]/g, '');
+      // Loại bỏ khoảng trắng thừa liên tiếp
+      value = value.replace(/\s{2,}/g, ' ');
+    }
+
+    if (field === 'phone') {
+      // Chỉ cho phép nhập số, tự động loại bỏ mọi ký tự khác
+      value = value.replace(/\D/g, '');
+      // Giới hạn tối đa 10 ký tự
+      value = value.slice(0, 10);
+    }
+
+    if (field === 'email') {
+      // Loại bỏ khoảng trắng khi nhập email
+      value = value.replace(/\s/g, '').toLowerCase();
+    }
+
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
   };
 
   const handleNumberChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: Number(e.target.value) }));
+    const val = parseInt(e.target.value, 10);
+    setForm((prev) => ({ ...prev, [field]: isNaN(val) ? '' : val }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
   };
 
   const toggleSpecialization = (id) => {
@@ -101,12 +114,92 @@ export default function TeacherFormModal({
         : [...currentIds, id];
       return { ...prev, specializationIds: updatedIds };
     });
+    if (errors.specializationIds) {
+      setErrors((prev) => ({ ...prev, specializationIds: null }));
+    }
+  };
+
+  /* ── Validate toàn diện ── */
+  const validateForm = () => {
+    const newErrors = {};
+
+    /* 1. Họ và tên */
+    const trimmedName = form.fullName?.trim();
+    if (!trimmedName) {
+      newErrors.fullName = "Họ và tên không được để trống.";
+    } else if (trimmedName.length < 2) {
+      newErrors.fullName = "Họ và tên phải có ít nhất 2 ký tự.";
+    } else if (trimmedName.length > 50) {
+      newErrors.fullName = "Họ và tên không được vượt quá 50 ký tự.";
+    } else if (/\d/.test(trimmedName)) {
+      newErrors.fullName = "Họ và tên không được chứa chữ số.";
+    } else if (/[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?`~]/.test(trimmedName)) {
+      newErrors.fullName = "Họ và tên không được chứa ký tự đặc biệt.";
+    } else if (trimmedName.startsWith(' ')) {
+      newErrors.fullName = "Họ và tên không được bắt đầu bằng khoảng trắng.";
+    }
+
+    /* 2. Số điện thoại */
+    if (form.phone) {
+      if (!/^\d+$/.test(form.phone)) {
+        newErrors.phone = "Số điện thoại chỉ được chứa chữ số.";
+      } else if (form.phone.length !== 10) {
+        newErrors.phone = "Số điện thoại phải có đúng 10 chữ số.";
+      } else if (!form.phone.startsWith('0')) {
+        newErrors.phone = "Số điện thoại phải bắt đầu bằng số 0.";
+      }
+    }
+
+    /* 3. Email (bắt buộc khi Thêm mới) */
+    if (!initialData) {
+      const trimmedEmail = form.email?.trim();
+      if (!trimmedEmail) {
+        newErrors.email = "Email không được để trống.";
+      } else if (/\s/.test(form.email)) {
+        newErrors.email = "Email không được chứa khoảng trắng.";
+      } else if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(trimmedEmail)) {
+        newErrors.email = "Email phải đúng định dạng và có đuôi @gmail.com.";
+      } else if (/\.{2,}/.test(trimmedEmail.split('@')[0])) {
+        newErrors.email = "Email không được chứa hai dấu chấm liên tiếp.";
+      } else if (trimmedEmail.split('@')[0].startsWith('.') || trimmedEmail.split('@')[0].endsWith('.')) {
+        newErrors.email = "Phần tên email không được bắt đầu hoặc kết thúc bằng dấu chấm.";
+      }
+    }
+
+    /* 4. Số lớp tối đa */
+    if (form.maxClasses === '' || form.maxClasses === null || form.maxClasses === undefined) {
+      newErrors.maxClasses = "Vui lòng nhập số lớp tối đa.";
+    } else if (!Number.isInteger(Number(form.maxClasses))) {
+      newErrors.maxClasses = "Số lớp phải là số nguyên.";
+    } else if (form.maxClasses <= 0 || form.maxClasses > 20) {
+      newErrors.maxClasses = "Số lớp tối đa phải từ 1 đến 20.";
+    }
+
+    /* 5. Số giờ tối đa / ngày */
+    if (form.maxHoursPerDay === '' || form.maxHoursPerDay === null || form.maxHoursPerDay === undefined) {
+      newErrors.maxHoursPerDay = "Vui lòng nhập số giờ tối đa.";
+    } else if (!Number.isInteger(Number(form.maxHoursPerDay))) {
+      newErrors.maxHoursPerDay = "Số giờ phải là số nguyên.";
+    } else if (form.maxHoursPerDay <= 0 || form.maxHoursPerDay > 12) {
+      newErrors.maxHoursPerDay = "Số giờ tối đa phải từ 1 đến 12.";
+    }
+
+    /* 6. Chuyên môn */
+    if (!form.specializationIds || form.specializationIds.length === 0) {
+      newErrors.specializationIds = "Giảng viên phải có ít nhất 1 chuyên môn.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmitForm = (e) => {
     if (e) e.preventDefault();
-    if (!form.fullName?.trim() || (!initialData && !form.email?.trim())) return; // Thêm mới bắt buộc email
-    onSubmit(form);
+    if (isViewMode) return;
+    // Trim tên trước khi submit
+    setForm((prev) => ({ ...prev, fullName: prev.fullName?.trim() }));
+    if (!validateForm()) return;
+    onSubmit({ ...form, fullName: form.fullName?.trim() });
   };
 
   return (
@@ -150,10 +243,12 @@ export default function TeacherFormModal({
                 placeholder="Nguyễn Văn A"
                 value={form.fullName}
                 onChange={handleChange('fullName')}
+                maxLength={50}
                 required
                 disabled={isViewMode}
-                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''}`}
+                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''} ${errors.fullName ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
               />
+              {errors.fullName && <p className="text-xs text-rose-500 font-medium">{errors.fullName}</p>}
             </div>
             
             <div className="flex flex-col gap-1.5">
@@ -162,12 +257,14 @@ export default function TeacherFormModal({
               </label>
               <input
                 type="tel"
-                placeholder="0901 234 567"
+                placeholder="0901234567"
                 value={form.phone}
                 onChange={handleChange('phone')}
+                maxLength={10}
                 disabled={isViewMode}
-                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''}`}
+                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''} ${errors.phone ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
               />
+              {errors.phone && <p className="text-xs text-rose-500 font-medium">{errors.phone}</p>}
             </div>
           </div>
 
@@ -179,13 +276,15 @@ export default function TeacherFormModal({
               </label>
               <input
                 type="email"
-                placeholder="email@example.com"
+                placeholder="ten.gv@gmail.com"
                 value={form.email || ''}
                 onChange={handleChange('email')}
-                disabled={!!initialData || isViewMode} // Edit hoặc View đều không cho sửa email
+                maxLength={50}
+                disabled={!!initialData || isViewMode}
                 required={!initialData}
-                className={`${inputCls} ${(!!initialData || isViewMode) ? 'bg-slate-100' : ''}`}
+                className={`${inputCls} ${(!!initialData || isViewMode) ? 'bg-slate-100' : ''} ${errors.email ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
               />
+              {errors.email && <p className="text-xs text-rose-500 font-medium">{errors.email}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -220,8 +319,9 @@ export default function TeacherFormModal({
                 value={form.maxClasses}
                 onChange={handleNumberChange('maxClasses')}
                 disabled={isViewMode}
-                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''}`}
+                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''} ${errors.maxClasses ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
               />
+              {errors.maxClasses && <p className="text-xs text-rose-500 font-medium">{errors.maxClasses}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -235,8 +335,9 @@ export default function TeacherFormModal({
                 value={form.maxHoursPerDay}
                 onChange={handleNumberChange('maxHoursPerDay')}
                 disabled={isViewMode}
-                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''}`}
+                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''} ${errors.maxHoursPerDay ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
               />
+              {errors.maxHoursPerDay && <p className="text-xs text-rose-500 font-medium">{errors.maxHoursPerDay}</p>}
             </div>
           </div>
 
@@ -252,7 +353,7 @@ export default function TeacherFormModal({
                 </span>
               </label>
               
-              <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-[140px] overflow-y-auto content-start list-scrollbar">
+              <div className={`flex flex-wrap gap-2 p-3 bg-slate-50 border rounded-xl max-h-[140px] overflow-y-auto content-start list-scrollbar ${errors.specializationIds ? 'border-rose-500' : 'border-slate-200'}`}>
                 {displaySpecializations.map((s) => {
                   const isSelected = form.specializationIds?.includes(s.id);
                   return (
@@ -273,6 +374,7 @@ export default function TeacherFormModal({
                   );
                 })}
               </div>
+              {errors.specializationIds && <p className="text-xs text-rose-500 font-medium">{errors.specializationIds}</p>}
             </div>
           )}
 

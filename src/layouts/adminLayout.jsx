@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -11,12 +11,19 @@ import {
   Award // 🔹 Import thêm icon đại diện cho Chuyên môn (Specialization)
 } from "lucide-react";
 import { useAuthContext } from "../features/auth/context/AuthContext";
+import ConfirmModal from "../components/ui/ConfirmModal";
+import NotificationBell from "../features/teachers/components/NotificationBell";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
   const { clearUser } = useAuthContext();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const handleLogout = () => {
+    setIsLogoutModalOpen(true);
+  };
+
+  const confirmLogout = () => {
     clearUser(); // Xóa token và user khỏi state/storage
     navigate("/auth/login");
   };
@@ -25,7 +32,7 @@ export default function AdminLayout() {
   const menuItems = [
   {
     path: "/admin",
-    name: "Bảng điều khiển",
+    name: "Dashboard",
     icon: <LayoutDashboard size={20} />,
     end: true
   },
@@ -125,14 +132,18 @@ export default function AdminLayout() {
             </span>
           </div>
 
-          {/* Thông tin tài khoản góc phải */}
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-medium text-slate-700">Nhân viên học vụ</p>
-              <p className="text-xs text-slate-400">nhanvienhocvu@gmail.com</p>
-            </div>
-            <div className="w-10 h-10 bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold border border-slate-300">
-              <UserCheck size={20} />
+          {/* Thông vị tài khoản góc phải */}
+          <div className="flex items-center gap-6">
+            <NotificationBell />
+            
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-medium text-slate-700">Nhân viên học vụ</p>
+                <p className="text-xs text-slate-400">nhanvienhocvu@gmail.com</p>
+              </div>
+              <div className="w-10 h-10 bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold border border-slate-300">
+                <UserCheck size={20} />
+              </div>
             </div>
           </div>
         </header>
@@ -143,6 +154,16 @@ export default function AdminLayout() {
         </main>
 
       </div>
+
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={confirmLogout}
+        title="Đăng xuất"
+        message="Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?"
+        confirmText="Đăng xuất"
+        type="warning"
+      />
     </div>
   );
 }
