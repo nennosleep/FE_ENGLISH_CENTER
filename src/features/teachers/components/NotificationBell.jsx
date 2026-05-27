@@ -6,26 +6,7 @@ export default function NotificationBell() {
   const dropdownRef = useRef(null);
 
   // Mock dữ liệu thông báo
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: 'Phân công mới cho lớp IELTS-A2 đang chờ duyệt',
-      time: '5 phút trước',
-      isRead: false,
-    },
-    {
-      id: 2,
-      title: 'Giảng viên Trần Thị Bình đã từ chối phân công',
-      time: '1 giờ trước',
-      isRead: false,
-    },
-    {
-      id: 3,
-      title: 'Báo cáo tháng 4 đã sẵn sàng',
-      time: '2 giờ trước',
-      isRead: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 

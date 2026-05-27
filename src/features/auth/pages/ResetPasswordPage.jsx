@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 import {
@@ -34,20 +34,22 @@ export default function ResetPasswordPage() {
     sessionStorage.getItem('otp_code') ||
     '';
 
-  /* Save session */
-  if (location.state?.email) {
-    sessionStorage.setItem(
-      'otp_email',
-      location.state.email
-    );
-  }
+  /* Lưu session đúng cách trong useEffect */
+  useEffect(() => {
+    if (location.state?.email) {
+      sessionStorage.setItem('otp_email', location.state.email);
+    }
+    if (location.state?.otp) {
+      sessionStorage.setItem('otp_code', location.state.otp);
+    }
+  }, [location.state?.email, location.state?.otp]);
 
-  if (location.state?.otp) {
-    sessionStorage.setItem(
-      'otp_code',
-      location.state.otp
-    );
-  }
+  /* Chặn truy cập trực tiếp khi thiếu email hoặc OTP */
+  useEffect(() => {
+    if (!email || !otp) {
+      navigate('/auth/forgot-password', { replace: true });
+    }
+  }, [email, otp, navigate]);
 
   /* States */
   const [newPassword, setNewPassword] =
@@ -107,29 +109,57 @@ export default function ResetPasswordPage() {
     'text-green-500',
   ][strength];
 
+  /* Dịch lỗi Backend sang Tiếng Việt */
+  const getViError = (err) => {
+    const msg = err?.response?.data?.message?.toLowerCase() || '';
+    const status = err?.response?.status;
+    if (msg.includes('expired') || msg.includes('hết hạn')) return 'Phiên xác thực đã hết hạn. Vui lòng thực hiện lại từ đầu.';
+    if (msg.includes('invalid') && msg.includes('otp')) return 'Mã OTP không hợp lệ. Vui lòng thực hiện lại.';
+    if (msg.includes('weak') || msg.includes('password')) return 'Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.';
+    if (msg.includes('same') || msg.includes('match')) return 'Mật khẩu mới không được trùng với mật khẩu cũ.';
+    if (status === 400) return 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
+    if (status === 500) return 'Lỗi hệ thống. Vui lòng thử lại sau.';
+    if (!err?.response) return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+    return 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.';
+  };
+
   /* ───────────────────────────────────────────────── */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!newPassword) {
-      toast.warning(
-        'Vui lòng nhập mật khẩu mới.'
-      );
+      toast.warning('Vui lòng nhập mật khẩu mới.');
       return;
     }
 
     if (newPassword.length < 8) {
-      toast.warning(
-        'Mật khẩu phải có ít nhất 8 ký tự.'
-      );
+      toast.warning('Mật khẩu phải có ít nhất 8 ký tự.');
+      return;
+    }
+
+    if (newPassword.length > 50) {
+      toast.warning('Mật khẩu không được vượt quá 50 ký tự.');
+      return;
+    }
+
+    if (/\s/.test(newPassword)) {
+      toast.warning('Mật khẩu không được chứa khoảng trắng.');
+      return;
+    }
+
+    if (!/(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d\s])/.test(newPassword)) {
+      toast.warning('Mật khẩu phải chứa ít nhất 1 chữ cái, 1 số và 1 ký tự đặc biệt.');
+      return;
+    }
+
+    if (!confirmPassword) {
+      toast.warning('Vui lòng nhập lại mật khẩu xác nhận.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.warning(
-        'Mật khẩu xác nhận không khớp.'
-      );
+      toast.warning('Mật khẩu xác nhận không khớp.');
       return;
     }
 
@@ -142,19 +172,12 @@ export default function ResetPasswordPage() {
         newPassword
       );
 
-      sessionStorage.removeItem(
-        'otp_email'
-      );
-
-      sessionStorage.removeItem(
-        'otp_code'
-      );
+      sessionStorage.removeItem('otp_email');
+      sessionStorage.removeItem('otp_code');
 
       setDone(true);
 
-      toast.success(
-        'Đặt lại mật khẩu thành công.'
-      );
+      toast.success('Đặt lại mật khẩu thành công.');
 
       setTimeout(() => {
         navigate('/auth/login', {
@@ -163,10 +186,7 @@ export default function ResetPasswordPage() {
       }, 2500);
 
     } catch (err) {
-      toast.error(
-        err?.response?.data?.message ||
-        'Đặt lại mật khẩu thất bại.'
-      );
+      toast.error(getViError(err));
 
     } finally {
       setIsLoading(false);
@@ -299,6 +319,7 @@ export default function ResetPasswordPage() {
                   );
                 }}
 
+                maxLength={50}
                 disabled={isLoading}
 
                 className="
@@ -452,6 +473,7 @@ export default function ResetPasswordPage() {
                   );
                 }}
 
+                maxLength={50}
                 disabled={isLoading}
 
                 className="

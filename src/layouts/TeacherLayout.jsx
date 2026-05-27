@@ -1,26 +1,33 @@
-import React from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, CalendarDays, ClipboardList, User, LogOut } from 'lucide-react';
 import { useAuthContext } from '../features/auth/context/AuthContext';
 import NotificationBell from '../features/teachers/components/NotificationBell';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 export default function TeacherLayout() {
   const navigate = useNavigate();
-  const { clearUser } = useAuthContext();
+  const location = useLocation();
+  const { user, clearUser } = useAuthContext();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const handleLogout = () => {
+    setIsLogoutModalOpen(true);
+  };
+
+  const confirmLogout = () => {
     clearUser();
     navigate('/auth/login');
   };
 
   const menuItems = [
     {
-      path: '/teacher/overview',
-      name: 'Bảng điều khiển',
+      path: '/teacher/dashboard',
+      name: 'Dashboard',
       icon: <LayoutDashboard size={20} />,
     },
     {
-      path: '/teacher/dashboard',
+      path: '/teacher/schedule',
       name: 'Lịch dạy của tôi',
       icon: <CalendarDays size={20} />,
     },
@@ -91,7 +98,7 @@ export default function TeacherLayout() {
         <header className="h-[68px] bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 z-0">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold text-slate-800">
-              Lịch dạy của tôi
+              {menuItems.find(item => location.pathname.startsWith(item.path))?.name || 'Hệ thống quản lý'}
             </h1>
           </div>
 
@@ -99,28 +106,14 @@ export default function TeacherLayout() {
           <div className="flex items-center gap-6">
             <NotificationBell />
 
-            <div className="flex items-center gap-3 relative group cursor-pointer">
-              <div className="w-10 h-10 bg-[#1b3392] text-white rounded-full flex items-center justify-center font-bold shadow-sm">
-                VA
-              </div>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-semibold text-slate-800">Nguyễn Văn An</p>
-                <span className="inline-block px-2 py-[2px] bg-purple-100 text-purple-700 text-[10px] font-bold rounded-full uppercase tracking-wider mt-0.5">
-                  Giảng viên
+            <div className="flex items-center gap-3">
+              <div className="hidden md:flex flex-col items-end">
+                <p className="text-[15px] text-slate-600">
+                  Xin chào, <span className="font-bold text-slate-800">{user?.name || user?.username || 'Nguyễn Hoàng Dũng'}</span>
+                </p>
+                <span className="inline-block px-3 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-bold rounded-full uppercase tracking-wide mt-1 border border-indigo-100">
+                  {user?.roles?.includes('ROLE_ADMIN') ? 'Quản trị viên' : 'GIẢNG VIÊN'}
                 </span>
-              </div>
-              
-              {/* Dropdown Đăng xuất (Hover) */}
-              <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <div className="p-3 border-b border-slate-50">
-                  <p className="text-sm font-semibold text-slate-800">Nguyễn Văn An</p>
-                  <p className="text-xs text-slate-400 truncate">an.nv@englishcenter.vn</p>
-                </div>
-                <div className="p-1">
-                  <button className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg flex items-center gap-2">
-                    <User size={16} /> Hồ sơ cá nhân
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -131,6 +124,16 @@ export default function TeacherLayout() {
           <Outlet />
         </main>
       </div>
+
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={confirmLogout}
+        title="Đăng xuất"
+        message="Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?"
+        confirmText="Đăng xuất"
+        type="warning"
+      />
     </div>
   );
 }

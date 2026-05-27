@@ -19,25 +19,48 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
+  /* Dịch lỗi backend sang Tiếng Việt */
+  const getViError = (err) => {
+    const msg = err?.response?.data?.message?.toLowerCase() || '';
+    const status = err?.response?.status;
+    if (msg.includes('not found') || msg.includes('not exist')) return 'Không tìm thấy tài khoản với email này.';
+    if (msg.includes('invalid') && msg.includes('email')) return 'Địa chỉ email không hợp lệ.';
+    if (msg.includes('too many') || msg.includes('rate limit')) return 'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.';
+    if (status === 429) return 'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.';
+    if (status === 500) return 'Lỗi hệ thống. Vui lòng thử lại sau.';
+    if (!err?.response) return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+    return 'Không tìm thấy tài khoản với email này.';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const trimmedEmail = email.trim().toLowerCase();
 
-    if (!email.trim()) {
+    if (!trimmedEmail) {
       toast.warning('Vui lòng nhập địa chỉ email.');
       return;
     }
 
-    if (!emailRegex.test(email.trim())) {
-      toast.warning('Địa chỉ email không hợp lệ.');
+    if (/\s/.test(email)) {
+      toast.warning('Email không được chứa khoảng trắng.');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(trimmedEmail)) {
+      toast.warning('Email phải đúng định dạng và có đuôi @gmail.com.');
+      return;
+    }
+
+    if (/\.{2,}/.test(trimmedEmail.split('@')[0])) {
+      toast.warning('Email không được chứa hai dấu chấm liên tiếp.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      await forgotPasswordApi(email.trim());
+      await forgotPasswordApi(trimmedEmail);
 
       setSent(true);
 
@@ -47,15 +70,12 @@ export default function ForgotPasswordPage() {
 
       setTimeout(() => {
         navigate('/auth/verify-otp', {
-          state: { email: email.trim() },
+          state: { email: trimmedEmail },
         });
       }, 2000);
 
     } catch (err) {
-      toast.error(
-        err?.response?.data?.message ||
-        'Không tìm thấy tài khoản với email này.'
-      );
+      toast.error(getViError(err));
 
     } finally {
       setIsLoading(false);
