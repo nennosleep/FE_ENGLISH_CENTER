@@ -148,20 +148,19 @@ export default function TeacherFormModal({
       }
     }
 
-    /* 3. Email (bắt buộc khi Thêm mới) */
-    if (!initialData) {
-      const trimmedEmail = form.email?.trim();
-      if (!trimmedEmail) {
-        newErrors.email = "Email không được để trống.";
-      } else if (/\s/.test(form.email)) {
-        newErrors.email = "Email không được chứa khoảng trắng.";
-      } else if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(trimmedEmail)) {
-        newErrors.email = "Email phải đúng định dạng và có đuôi @gmail.com.";
-      } else if (/\.{2,}/.test(trimmedEmail.split('@')[0])) {
-        newErrors.email = "Email không được chứa hai dấu chấm liên tiếp.";
-      } else if (trimmedEmail.split('@')[0].startsWith('.') || trimmedEmail.split('@')[0].endsWith('.')) {
-        newErrors.email = "Phần tên email không được bắt đầu hoặc kết thúc bằng dấu chấm.";
-      }
+    /* 3. Email (bắt buộc) */
+    const trimmedEmail = form.email?.trim();
+    if (!trimmedEmail) {
+      newErrors.email = "Email không được để trống.";
+    } else if (/\s/.test(form.email)) {
+      newErrors.email = "Email không được chứa khoảng trắng.";
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmedEmail)) {
+      // Changed to generic email regex since @gmail.com might be too restrictive, but if required we can keep @gmail.com
+      newErrors.email = "Email phải đúng định dạng.";
+    } else if (/\.{2,}/.test(trimmedEmail.split('@')[0])) {
+      newErrors.email = "Email không được chứa hai dấu chấm liên tiếp.";
+    } else if (trimmedEmail.split('@')[0].startsWith('.') || trimmedEmail.split('@')[0].endsWith('.')) {
+      newErrors.email = "Phần tên email không được bắt đầu hoặc kết thúc bằng dấu chấm.";
     }
 
     /* 4. Số lớp tối đa */
@@ -279,7 +278,7 @@ export default function TeacherFormModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-slate-600">
-                Email (Tài khoản) { !initialData && <span className="text-rose-500">*</span> }
+                Email (Tài khoản) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="email"
@@ -287,9 +286,9 @@ export default function TeacherFormModal({
                 value={form.email || ''}
                 onChange={handleChange('email')}
                 maxLength={50}
-                disabled={!!initialData || isViewMode}
-                required={!initialData}
-                className={`${inputCls} ${(!!initialData || isViewMode) ? 'bg-slate-100' : ''} ${errors.email ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
+                disabled={isViewMode}
+                required
+                className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''} ${errors.email ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
               />
               {errors.email && <p className="text-xs text-rose-500 font-medium">{errors.email}</p>}
             </div>
