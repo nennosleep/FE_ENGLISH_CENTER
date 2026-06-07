@@ -13,6 +13,12 @@ import {
   getAllTeachers
 } from '../../../services/teacherService';
 
+
+import {
+  getAvailableTeachersForClass
+} from '../../../services/sessionTeacherService';
+
+
 import {
   createAssignment,
   getAllAssignments
@@ -139,82 +145,51 @@ export default function TeacherAssignmentTab({ onAssignSuccess }) {
   // =========================
   // CHỌN LỚP -> LOAD GIÁO VIÊN
   // =========================
-  const handleClassSelection = async (classId) => {
-
-    setAssignForm({
-      ...assignForm,
-      classId,
-      teacherId: ''
-    });
-
+ const handleClassSelection = async (classId) => {
+    setAssignForm({ ...assignForm, classId, teacherId: '' });
+    
     if (!classId) {
       setTeachersList([]);
       return;
     }
 
     setTeacherLoading(true);
-
-    setAssignMessage({
-      type: '',
-      text: ''
-    });
+    setAssignMessage({ type: '', text: '' });
 
     try {
+      // Dùng Promise.all để gọi song song, tăng tốc độ phản hồi
+      const [availableRes, courseData] = await Promise.all([
+        getAvailableTeachersForClass(classId),
+        getCourseByClassId(classId)
+      ]);
 
-      // lấy course từ class
-      const courseData =
-        await getCourseByClassId(classId);
-
+      // An toàn hơn với ?.data || []
+      const availableTeachers = availableRes?.data || availableRes || [];
       const courseId = courseData?.id;
 
-      if (!courseId) {
-        throw new Error(
-          'Không tìm thấy khóa học'
-        );
-      }
+      const teachersByCourseRes = await getTeachersByCourse(courseId);
+      const teachersByCourse = teachersByCourseRes?.data || teachersByCourseRes || [];
 
-      // lấy giáo viên theo course
-      const filteredTeachers =
-        await getTeachersByCourse(courseId);
+      // Phép giao (Intersection)
+      const availableIds = new Set(availableTeachers.map(t => t.id));
+      const intersection = teachersByCourse.filter(t => availableIds.has(t.id));
 
-      setTeachersList(
-        Array.isArray(filteredTeachers)
-          ? filteredTeachers
-          : []
-      );
+      setTeachersList(intersection);
 
-      if (filteredTeachers.length === 0) {
-
+      if (intersection.length === 0) {
         setAssignMessage({
           type: 'error',
-          text:
-            'Không có giáo viên phù hợp cho khóa học này.'
+          text: 'Không tìm thấy giáo viên nào vừa rảnh vừa phù hợp chuyên môn.'
         });
-
       }
-
     } catch (err) {
-
-      console.error(
-        'Lỗi tải giáo viên:',
-        err
-      );
-
+      console.error('Lỗi tải giáo viên:', err);
       setTeachersList([]);
-
-      setAssignMessage({
-        type: 'error',
-        text:
-          'Không thể tải danh sách giáo viên.'
-      });
-
+      setAssignMessage({ type: 'error', text: 'Có lỗi xảy ra khi tải dữ liệu.' });
     } finally {
-
       setTeacherLoading(false);
-
     }
   };
-
   // =========================
   // PHÂN CÔNG
   // =========================

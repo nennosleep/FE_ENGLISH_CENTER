@@ -5,7 +5,8 @@ import {
   getTeachersBySessionId,
   createSessionTeacher,
   deleteSessionTeacher,
-  getAvailableColleaguesForSession
+  getAvailableColleaguesForSession,
+  getAvailableTeachersForSubstitute
 } from '../../../services/sessionTeacherService';
 
 
@@ -31,6 +32,8 @@ export default function UpdateSessionFromRoomModal({ isOpen, onClose, payload, o
   if (!isOpen || !payload?.existingSession) return null;
 
   const { user } = useAuthContext();
+  const [substituteTeachers, setSubstituteTeachers] = useState([]);
+  const [selectedSubstituteId, setSelectedSubstituteId] = useState('');
 
   const [sessionDetail, setSessionDetail] = useState(null);
 const [availableRooms, setAvailableRooms] = useState([]);
@@ -184,7 +187,7 @@ const loadSessionDetails = async () => {
         const rooms = await getAvailableRoomsForSession(detail.sessionDate, detail.timeSlotId);
         // Đảm bảo phòng hiện tại cũng nằm trong danh sách
         setAvailableRooms(rooms);
-        setSelectedRoomId(detail.roomId);
+        setSelectedRoomId("");
     } catch (err) {
         console.error("Lỗi load dữ liệu:", err);
     }
@@ -250,6 +253,37 @@ const handleSaveBatchRoomChange = async () => {
     }
 };
 
+const loadAvailableTeachersForSubstitute = async () => {
+  if (!sessionDetail) return;
+  try {
+    // 1. Lấy danh sách giáo viên "đã rảnh" từ Service mới
+    const mainTeacher = teachers.find(t => t.role === 'MAIN');
+    const currentTeacherId = mainTeacher ? mainTeacher.teacherId : '';
+    
+    // Gọi Service bạn vừa cung cấp
+    const res = await getAvailableTeachersForSubstitute(sessionDetail.classId, currentTeacherId);
+    const availableList = res?.data || [];
+
+    // 2. Lấy danh sách đồng nghiệp để làm bộ lọc chuyên môn/nhóm
+    // (Dùng lại hàm bạn đã dùng trong loadSuggestedTeachers)
+    const colleaguesRes = await getColleaguesByTeacherId(currentTeacherId);
+    const colleaguesList = colleaguesRes?.data || colleaguesRes || [];
+    const colleagueIds = new Set(colleaguesList.map(t => t.id));
+
+    // 3. Sàng lọc (Kết hợp: Rảnh + Là Đồng nghiệp)
+    const qualifiedSubstitutes = availableList.filter(t => 
+      colleagueIds.has(t.id) // Phải là đồng nghiệp
+    );
+
+    // Nếu không còn ai sau khi lọc, bạn có thể quyết định hiển thị toàn bộ availableList 
+    // hoặc thông báo "Không tìm thấy đồng nghiệp phù hợp".
+    setSubstituteTeachers(qualifiedSubstitutes.length > 0 ? qualifiedSubstitutes : availableList);
+    
+  } catch (err) {
+    console.error("Lỗi tải danh sách thay thế:", err);
+  }
+};
+
  return (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
@@ -259,7 +293,7 @@ const handleSaveBatchRoomChange = async () => {
       {/* HEADER */}
       <div className="p-6 border-b border-slate-100 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Điều phối nhân sự</h2>
+          <h2 className="text-xl font-bold text-slate-900">CẬP NHẬT CA HỌC</h2>
           <p className="text-xs text-slate-500 mt-0.5">Lớp: {session.className || session.classCode}</p>
         </div>
         <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 transition">
@@ -288,17 +322,28 @@ const handleSaveBatchRoomChange = async () => {
           </div>
 
           <div className="space-y-2">
-            <select
-              value={selectedRoomId}
-              onChange={(e) => setSelectedRoomId(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            >
-              {(isBatchMode ? batchRooms : availableRooms).map(room => (
-                <option key={room.id} value={room.id}>
-                  {room.name} (Sức chứa: {room.capacity}) {isBatchMode ? " - [Chuỗi]" : ""}
-                </option>
-              ))}
-            </select>
+           <label className="text-xs font-medium text-slate-600">
+    Chọn phòng học mới
+  </label>
+
+  <select
+    value={selectedRoomId}
+    onChange={(e) => setSelectedRoomId(e.target.value)}
+    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm
+               focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+               outline-none transition"
+  >
+    <option value="" disabled>
+      -- Chọn phòng học --
+    </option>
+
+    {(isBatchMode ? batchRooms : availableRooms).map((room) => (
+      <option key={room.id} value={room.id}>
+        {room.name} (Sức chứa: {room.capacity})
+        {isBatchMode ? " - [Chuỗi]" : ""}
+      </option>
+    ))}
+  </select>
             
             {isBatchMode && (
               <p className="text-[10px] text-amber-600 font-medium px-1 flex items-center gap-1">
@@ -350,6 +395,47 @@ const handleSaveBatchRoomChange = async () => {
           </div>
         </div>
 
+
+{/* PHẦN THAY THẾ GIÁO VIÊN */}
+<div className="space-y-4 pt-4 border-t border-slate-100">
+  <div className="flex items-center justify-between">
+    <h3 className="text-xs font-bold text-rose-900 uppercase flex items-center gap-2">
+      <UserPlus size={16} /> Thay thế giáo viên
+    </h3>
+    <button 
+      type="button"
+      onClick={loadAvailableTeachersForSubstitute}
+      className="text-[10px] font-bold text-rose-600 hover:text-rose-800 transition uppercase underline"
+    >
+      Tìm người thay thế khả dụng
+    </button>
+  </div>
+
+  {substituteTeachers.length > 0 ? (
+    <div className="space-y-3">
+      <select
+        value={selectedSubstituteId}
+        onChange={(e) => setSelectedSubstituteId(e.target.value)}
+        className="w-full px-4 py-2.5 bg-white border border-rose-200 rounded-xl text-sm focus:ring-2 focus:ring-rose-500 outline-none"
+      >
+        <option value="">-- Chọn giáo viên thay thế --</option>
+        {substituteTeachers.map(t => (
+          <option key={t.id} value={t.id}>{t.fullName}</option>
+        ))}
+      </select>
+      <button 
+        onClick={() => alert("Chức năng thay thế đang được phát triển")}
+        className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+      >
+        Xác nhận thay thế
+      </button>
+    </div>
+  ) : (
+    <p className="text-[11px] text-slate-400 italic text-center py-2">
+      Nhấn "Tìm người thay thế" để xem danh sách giáo viên phù hợp.
+    </p>
+  )}
+</div>
         {/* GỢI Ý & THÊM GIÁO VIÊN */}
         <div className="space-y-6 pt-4 border-t border-slate-100">
           {suggestedTeachers.length > 0 && (
