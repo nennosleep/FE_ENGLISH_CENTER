@@ -91,6 +91,12 @@ export const getAvailableRoomsForBatchUpdateSessions = async (classId, startDate
   }
 };
 
+export const deleteRoom = async (roomId) => {
+  const response = await schedulingAxios.delete(`/rooms/${roomId}`);
+  return response.data;
+};
+
+
 /**
  * 🚀 BỔ SUNG: Chuyển trạng thái phòng sang BẢO TRÌ (MAINTENANCE)
  * Hàm này sẽ thực hiện kiểm tra ràng buộc ở Backend trước khi thay đổi trạng thái.
