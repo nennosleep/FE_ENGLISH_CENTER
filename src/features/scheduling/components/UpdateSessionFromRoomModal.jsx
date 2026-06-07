@@ -170,7 +170,7 @@ const loadSessionDetails = async () => {
         const rooms = await getAvailableRoomsForSession(detail.sessionDate, detail.timeSlotId);
         // Đảm bảo phòng hiện tại cũng nằm trong danh sách
         setAvailableRooms(rooms);
-        setSelectedRoomId(detail.roomId);
+        setSelectedRoomId("");
     } catch (err) {
         console.error("Lỗi load dữ liệu:", err);
     }
@@ -276,7 +276,7 @@ const loadAvailableTeachersForSubstitute = async () => {
       {/* HEADER */}
       <div className="p-6 border-b border-slate-100 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Điều phối nhân sự</h2>
+          <h2 className="text-xl font-bold text-slate-900">CẬP NHẬT CA HỌC</h2>
           <p className="text-xs text-slate-500 mt-0.5">Lớp: {session.className || session.classCode}</p>
         </div>
         <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 transition">
@@ -305,17 +305,28 @@ const loadAvailableTeachersForSubstitute = async () => {
           </div>
 
           <div className="space-y-2">
-            <select
-              value={selectedRoomId}
-              onChange={(e) => setSelectedRoomId(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            >
-              {(isBatchMode ? batchRooms : availableRooms).map(room => (
-                <option key={room.id} value={room.id}>
-                  {room.name} (Sức chứa: {room.capacity}) {isBatchMode ? " - [Chuỗi]" : ""}
-                </option>
-              ))}
-            </select>
+           <label className="text-xs font-medium text-slate-600">
+    Chọn phòng học mới
+  </label>
+
+  <select
+    value={selectedRoomId}
+    onChange={(e) => setSelectedRoomId(e.target.value)}
+    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm
+               focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+               outline-none transition"
+  >
+    <option value="" disabled>
+      -- Chọn phòng học --
+    </option>
+
+    {(isBatchMode ? batchRooms : availableRooms).map((room) => (
+      <option key={room.id} value={room.id}>
+        {room.name} (Sức chứa: {room.capacity})
+        {isBatchMode ? " - [Chuỗi]" : ""}
+      </option>
+    ))}
+  </select>
             
             {isBatchMode && (
               <p className="text-[10px] text-amber-600 font-medium px-1 flex items-center gap-1">

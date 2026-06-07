@@ -48,50 +48,98 @@ export default function RoomFormModal({
   const handleReset = () => setForm(INITIAL_FORM);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (loading) return;
+  e.preventDefault();
 
-    if (!form.roomCode || !form.name || !form.capacity) {
-      toast.error('Vui lòng nhập đầy đủ thông tin');
-      return;
+  if (loading) return;
+
+if (!form.roomCode?.trim()) {
+  toast.error('Vui lòng nhập mã phòng');
+  return;
+}
+
+const roomCodeRegex = /^[a-zA-Z0-9_-]+$/;
+
+if (!roomCodeRegex.test(form.roomCode)) {
+  toast.error(
+    'Mã phòng chỉ được chứa chữ cái, số, dấu gạch ngang (-) hoặc gạch dưới (_)'
+  );
+  return;
+}
+const name = form.name?.trim();
+
+// Validate tên phòng rỗng
+if (!name) {
+  toast.error('Vui lòng nhập tên phòng');
+  return;
+}
+
+// Validate độ dài
+if (name.length > 25) {
+  toast.error('Tên phòng không được vượt quá 25 ký tự');
+  return;
+}
+  // Validate sức chứa
+if (form.capacity === '' || form.capacity === null || form.capacity === undefined) {
+  toast.error('Vui lòng nhập sức chứa');
+  return;
+}
+
+const capacity = Number(form.capacity);
+
+if (capacity < 0) {
+  toast.error('Không được thêm phòng có giá trị âm');
+  return;
+}
+
+if (capacity === 0) {
+  toast.error('Sức chứa phải lớn hơn 0');
+  return;
+}
+
+  setLoading(true);
+
+  try {
+    if (mode === 'CREATE') {
+      await createRoom({
+        ...form,
+        capacity: Number(form.capacity),
+      });
+
+      toast.success('Khởi tạo phòng thành công!');
+    } else {
+      if (
+        form.status === 'MAINTENANCE' &&
+        initialData.status !== 'MAINTENANCE'
+      ) {
+        await markRoomAsMaintenance(initialData.id);
+
+        toast.success('Đã chuyển phòng sang trạng thái bảo trì!');
+      } else {
+        await updateRoom(initialData.id, {
+          ...form,
+          capacity: Number(form.capacity),
+        });
+
+        toast.success('Cập nhật phòng thành công!');
+      }
     }
 
-    setLoading(true);
+    onRefresh?.();
+    onClose?.();
+  } catch (err) {
+    const errorCode =
+      err?.response?.data?.code || err?.code;
 
-    try {
-      if (mode === 'CREATE') {
-        await createRoom({ ...form, capacity: Number(form.capacity) });
-        toast.success("Khởi tạo phòng thành công!");
-      } else {
-        // NẾU CHUYỂN SANG BẢO TRÌ: Gọi service riêng
-        if (form.status === 'MAINTENANCE' && initialData.status !== 'MAINTENANCE') {
-          await markRoomAsMaintenance(initialData.id);
-          toast.success("Đã chuyển phòng sang trạng thái bảo trì!");
-        } 
-        // NẾU CẬP NHẬT THÔNG TIN THƯỜNG:
-        else {
-          await updateRoom(initialData.id, { 
-            ...form, 
-            capacity: Number(form.capacity) 
-          });
-          toast.success("Cập nhật phòng thành công!");
-        }
-      }
-
-      onRefresh?.();
-      onClose?.();
-    } catch (err) {
-      const errorCode = err.response?.data?.code;
-      
-      if (errorCode === 2003) {
-        toast.error("Không thể bảo trì: Phòng vẫn còn lịch học trong tương lai, vui lòng chuyển lớp trước!");
-      } else {
-        toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi lưu thông tin');
-      }
-    } finally {
-      setLoading(false);
+    if (errorCode === 2003) {
+      toast.error(
+        'Không thể bảo trì: Phòng vẫn còn lịch học trong tương lai, vui lòng chuyển lớp trước!'
+      );
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
@@ -174,7 +222,7 @@ export default function RoomFormModal({
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
                 >
                   <option value="ACTIVE">Đang sử dụng</option>
-                  <option value="INACTIVE">Không sử dụng</option>
+    
                   <option value="MAINTENANCE">Bảo trì</option>
                 </select>
               </div>

@@ -6,11 +6,13 @@ import {
   Plus,
   Loader2,
   Home,
+  Trash2,
   Users,
+  Pencil
 } from 'lucide-react';
-
 import { getRooms } from '../../../services/roomService';
 import RoomFormModal from '../components/RoomFormModal';
+import RoomDeleteFormModal from '../components/RoomDeleteFormModal';
 
 export default function RoomListPage() {
   const [rooms, setRooms] = useState([]);
@@ -23,7 +25,8 @@ export default function RoomListPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('CREATE');
   const [selectedRoom, setSelectedRoom] = useState(null);
-
+const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+const [roomToDelete, setRoomToDelete] = useState(null);
   useEffect(() => {
     fetchRooms();
   }, []);
@@ -58,6 +61,11 @@ export default function RoomListPage() {
   const totalPages = Math.ceil(filteredRooms.length / ITEMS_PER_PAGE);
   const start = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentRooms = filteredRooms.slice(start, start + ITEMS_PER_PAGE);
+
+const handleDelete = (room) => {
+  setRoomToDelete(room);
+  setIsDeleteOpen(true);
+};
 
   const renderStatus = (status) => {
     switch (status) {
@@ -175,14 +183,29 @@ export default function RoomListPage() {
                     {renderStatus(room.status)}
                   </td>
 
-                  <td className="py-4 px-6 text-center">
-                    <button
-                      onClick={() => openEditModal(room)}
-                      className="text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold"
-                    >
-                      Cập nhật
-                    </button>
-                  </td>
+               <td className="py-4 px-6 text-center">
+                <div className="flex items-center justify-center gap-2">
+
+                  {/* EDIT */}
+                  <button
+                    onClick={() => openEditModal(room)}
+                    className="p-2 text-slate-600 hover:text-blue-600 transition"
+                    title="Cập nhật"
+                  >
+                    <Pencil size={16} />
+                  </button>
+
+                  {/* DELETE */}
+                  <button
+                    onClick={() => handleDelete(room)}
+                    className="p-2 text-slate-600 hover:text-red-600 transition"
+                    title="Xóa"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+
+                </div>
+              </td>
 
                 </tr>
               ))}
@@ -241,6 +264,14 @@ export default function RoomListPage() {
         onClose={() => setIsModalOpen(false)}
         onRefresh={fetchRooms}
       />
+      <RoomDeleteFormModal
+        isOpen={isDeleteOpen}
+        room={roomToDelete}
+        onClose={() => setIsDeleteOpen(false)}
+        onRefresh={fetchRooms}
+      />
     </div>
+
+    
   );
 }
