@@ -100,8 +100,16 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
+  const updateToken = useCallback((newToken) => {
+    if (localStorage.getItem('token')) {
+      localStorage.setItem('token', newToken);
+    } else if (sessionStorage.getItem('token')) {
+      sessionStorage.setItem('token', newToken);
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, saveUser, clearUser, hasRole, updateUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, saveUser, clearUser, hasRole, updateUser, updateToken }}>
       {children}
     </AuthContext.Provider>
   );

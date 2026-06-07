@@ -135,8 +135,6 @@ export default function TeacherFormModal({
       newErrors.fullName = "Họ và tên không được chứa chữ số.";
     } else if (/[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?`~]/.test(trimmedName)) {
       newErrors.fullName = "Họ và tên không được chứa ký tự đặc biệt.";
-    } else if (trimmedName.startsWith(' ')) {
-      newErrors.fullName = "Họ và tên không được bắt đầu bằng khoảng trắng.";
     }
 
     /* 2. Số điện thoại */
@@ -196,10 +194,19 @@ export default function TeacherFormModal({
   const handleSubmitForm = (e) => {
     if (e) e.preventDefault();
     if (isViewMode) return;
-    // Trim tên trước khi submit
-    setForm((prev) => ({ ...prev, fullName: prev.fullName?.trim() }));
+    
+    // Trim và Viết hoa chữ cái đầu cho tên (Title Case)
+    let formattedName = form.fullName?.trim() || "";
+    if (formattedName) {
+      formattedName = formattedName
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+
+    setForm((prev) => ({ ...prev, fullName: formattedName }));
     if (!validateForm()) return;
-    onSubmit({ ...form, fullName: form.fullName?.trim() });
+    onSubmit({ ...form, fullName: formattedName });
   };
 
   return (
@@ -305,6 +312,23 @@ export default function TeacherFormModal({
               </select>
             </div>
           </div>
+
+          {/* Hàng 2.5: Username (Chỉ hiện khi Xem chi tiết) */}
+          {isViewMode && initialData?.username && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-slate-600">
+                  Tên đăng nhập
+                </label>
+                <input
+                  type="text"
+                  value={initialData.username}
+                  disabled={true}
+                  className={`${inputCls} bg-slate-100 font-medium text-blue-700`}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Hàng 3: Giới hạn lớp + Giới hạn giờ */}
           <div className="grid grid-cols-2 gap-4">

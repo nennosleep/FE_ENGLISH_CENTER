@@ -23,8 +23,14 @@ import {
 import {
   getColleaguesByTeacherId
 } from '../../../services/teacherService';
+
+import { createNotificationForTeacher } from '../../../services/notificationService';
+import { useAuthContext } from '../../auth/context/AuthContext';
+
 export default function UpdateSessionFromRoomModal({ isOpen, onClose, payload, onSaveSuccess }) {
   if (!isOpen || !payload?.existingSession) return null;
+
+  const { user } = useAuthContext();
 
   const [sessionDetail, setSessionDetail] = useState(null);
 const [availableRooms, setAvailableRooms] = useState([]);
@@ -129,6 +135,18 @@ const [selectedRoomId, setSelectedRoomId] = useState('');
         role,
         assignedBy: 'ADMIN_CURRENT',
       });
+
+      // TRIGGER 1: Bắn thông báo cho Giáo viên
+      try {
+        const className = session.className || session.classCode || 'một lớp học mới';
+        await createNotificationForTeacher(
+          teacherId, 
+          'Phân công lịch dạy mới', 
+          `Bạn vừa được phân công dạy lớp ${className} với vai trò ${role}. Vui lòng kiểm tra lịch.`
+        );
+      } catch (err) {
+        console.error('Không thể gửi thông báo cho GV', err);
+      }
 
       setTeacherId('');
       setTeacherName('');

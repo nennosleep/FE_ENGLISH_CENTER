@@ -7,7 +7,7 @@ import { changePasswordApi } from "../../../features/auth/services/authService";
 import { useToast } from "../../../components/ui/Toast";
 
 export default function TeacherProfilePage() {
-  const { user, updateUser } = useAuthContext();
+  const { user, updateUser, updateToken } = useAuthContext();
   const toast = useToast();
   const [teacherData, setTeacherData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -88,9 +88,20 @@ export default function TeacherProfilePage() {
     try {
       setSavingProfile(true);
       
+      // Trim và Viết hoa chữ cái đầu cho tên (Title Case)
+      let trimmedName = editForm.name.trim();
+      if (trimmedName) {
+        trimmedName = trimmedName
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+      }
+      const trimmedEmail = editForm.email.trim();
+      const trimmedPhone = editForm.phone.trim();
+
       const teacherPayload = {
-        fullName: editForm.name,
-        phone: editForm.phone,
+        fullName: trimmedName,
+        phone: trimmedPhone,
         status: teacherData.status,
         maxClasses: teacherData.maxClasses,
         maxHoursPerDay: teacherData.maxHoursPerDay,
@@ -99,19 +110,39 @@ export default function TeacherProfilePage() {
 
       const accountPayload = {
         username: editForm.username,
-        email: editForm.email
+        email: trimmedEmail
       };
       
       await updateTeacher(user.teacherId, teacherPayload);
-      if (user.accountId) {
-        await updateAccount(user.accountId, accountPayload);
-        // Cập nhật lại thông tin trong context auth
-        if (updateUser) {
-          updateUser({ username: editForm.username, email: editForm.email, name: editForm.name });
+      try {
+        if (user.accountId) {
+          const accountRes = await updateAccount(user.accountId, accountPayload);
+          // Cập nhật lại thông tin trong context auth
+          if (updateUser) {
+            updateUser({ username: editForm.username, email: trimmedEmail, name: trimmedName });
+          }
+          if (accountRes?.data?.newToken && updateToken) {
+            updateToken(accountRes.data.newToken);
+          }
         }
+      } catch (accountError) {
+        console.error("Lỗi khi cập nhật tài khoản", accountError);
+        toast.error("Cập nhật hồ sơ không hoàn tất. Vui lòng thử lại.");
+        // Re-fetch profile data to ensure UI shows actual server state
+        if (user?.teacherId) {
+          const data = await getTeacherById(user.teacherId);
+          setTeacherData(data);
+          setEditForm({
+            name: data.fullName || user.name || "",
+            phone: data.phone || "",
+            username: user.username || "",
+            email: data.email || user.email || "",
+          });
+        }
+        return;
       }
 
-      setTeacherData(prev => ({ ...prev, fullName: editForm.name, phone: editForm.phone, email: editForm.email }));
+      setTeacherData(prev => ({ ...prev, fullName: trimmedName, phone: trimmedPhone, email: trimmedEmail }));
       setIsEditing(false);
       toast.success("Cập nhật thông tin thành công!");
     } catch (error) {
@@ -130,6 +161,21 @@ export default function TeacherProfilePage() {
         viMsg = error.response.data.message; // Fallback to provided message if we don't catch it
       }
       toast.error(viMsg);
+      // Re-fetch profile data after any error to ensure UI shows actual server state
+      try {
+        if (user?.teacherId) {
+          const data = await getTeacherById(user.teacherId);
+          setTeacherData(data);
+          setEditForm({
+            name: data.fullName || user.name || "",
+            phone: data.phone || "",
+            username: user.username || "",
+            email: data.email || user.email || "",
+          });
+        }
+      } catch (fetchErr) {
+        console.error("Lỗi khi tải lại hồ sơ", fetchErr);
+      }
     } finally {
       setSavingProfile(false);
     }
@@ -357,10 +403,11 @@ export default function TeacherProfilePage() {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  <div>
                     <p className="text-sm text-slate-500 mb-3">Kỹ năng giảng dạy</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2.5">
                       {teacherData.specializations?.length > 0 ? (
                         teacherData.specializations.map((spec) => (
-                          <span key={spec.id} className="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded-md font-medium border border-slate-200">
+                          <span key={spec.id} className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-[0.85rem] rounded-full font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 hover:bg-blue-100 hover:shadow transition-all cursor-default">
+                            <BookOpen size={14} className="text-blue-500" />
                             {spec.name}
                           </span>
                         ))

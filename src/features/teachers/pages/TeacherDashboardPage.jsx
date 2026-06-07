@@ -56,7 +56,7 @@ export default function TeacherDashboardPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         <h2 className="text-2xl font-bold text-slate-800">
-          Chào mừng trở lại, {teacher?.fullName || user?.name || 'Giảng viên'}!
+          Xin chào, {teacher?.fullName || user?.name || 'Giảng viên'}!
         </h2>
         <p className="text-slate-500 mt-1">Chúc bạn một ngày làm việc hiệu quả.</p>
       </div>

@@ -11,6 +11,8 @@ import {
   Eye,
   Lock,
   LogOut,
+  Phone,
+  BookOpen,
 } from 'lucide-react';
 
 import TeacherFormModal from '../components/TeacherFormModal';
@@ -23,7 +25,8 @@ import {
   getAllTeachers,
   createTeacher,
   updateTeacher,
-  updateTeacherStatus
+  updateTeacherStatus,
+  deleteTeacher
 } from '../../../services/teacherService';
 
 import { getSpecializations } from '../../../services/specializationService';
@@ -69,6 +72,9 @@ export default function TeacherListPage() {
   const [teachers, setTeachers] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'name_asc', 'name_desc'
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterSpecialization, setFilterSpecialization] = useState('ALL');
 
   /* Modal state */
   const [modalOpen, setModalOpen] = useState(false);
@@ -96,7 +102,11 @@ export default function TeacherListPage() {
         getSpecializations()
       ]);
       
-      setTeachers(teachersData || []);
+      const sortedTeachers = (teachersData || []).sort((a, b) => {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+      
+      setTeachers(sortedTeachers);
       setSpecializations(specsData || []);
     } catch (error) {
       toast.error('Lỗi khi tải dữ liệu từ máy chủ.');
@@ -112,12 +122,28 @@ export default function TeacherListPage() {
   }, [fetchData]);
 
   /* ── Bộ lọc tìm kiếm Local ── */
-  const filtered = teachers.filter(
-    (t) =>
+  let filtered = teachers.filter((t) => {
+    const matchSearch =
       t.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.teacherCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.phone?.includes(searchTerm)
-  );
+      t.phone?.includes(searchTerm);
+
+    const matchStatus = filterStatus === 'ALL' ? true : t.status === filterStatus;
+    const matchSpec = filterSpecialization === 'ALL' ? true : t.specializations?.some(s => s.id === filterSpecialization);
+
+    return matchSearch && matchStatus && matchSpec;
+  });
+
+  /* ── Sắp xếp Local ── */
+  filtered.sort((a, b) => {
+    if (sortBy === 'name_asc') {
+      return a.fullName?.localeCompare(b.fullName);
+    } else if (sortBy === 'name_desc') {
+      return b.fullName?.localeCompare(a.fullName);
+    } else { // newest
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    }
+  });
 
   /* Phân trang dùng chung hook */
   const { currentPage, totalPages, totalItems, pageSize, paginated, setPage } = usePagination(filtered, 10);
@@ -161,7 +187,8 @@ export default function TeacherListPage() {
     try {
       const payload = {
         fullName: form.fullName,
-        phone: form.phone,
+        phone: form.phone || null,
+        email: form.email || null,
         maxClasses: Number(form.maxClasses || 0),
         maxHoursPerDay: Number(form.maxHoursPerDay || 0),
         status: form.status || 'ACTIVE',
@@ -173,18 +200,17 @@ export default function TeacherListPage() {
         toast.success('Cập nhật thông tin giảng viên thành công.');
       } else {
         payload.email = form.email;
-        const generatedCode = 'TEC_' + Date.now().toString().slice(-4);
-        payload.teacherCode = generatedCode;
-        payload.username = generatedCode;
-        payload.password = generatedCode;
-        await createTeacher(payload);
-        toast.success('Thêm giảng viên mới thành công. Tài khoản/Mật khẩu mặc định là: ' + generatedCode);
+        const response = await createTeacher(payload);
+        toast.success('Tạo giảng viên thành công!');
       }
       
       setModalOpen(false);
       // Tải lại chỉ danh sách giảng viên sau khi lưu
       const newTeachers = await getAllTeachers();
-      setTeachers(newTeachers || []);
+      const sortedTeachers = (newTeachers || []).sort((a, b) => {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+      setTeachers(sortedTeachers);
     } catch (error) {
       toast.error(getVietnameseError(error, 'Lỗi khi lưu thông tin giảng viên.'));
     } finally {
@@ -192,37 +218,7 @@ export default function TeacherListPage() {
     }
   };
 
-  /* ── Khóa/Ngừng hoạt động giảng viên API ── */
-  const handleLock = (teacher) => {
-    if (teacher.status === 'INACTIVE' || teacher.status === 'RESIGNED') {
-      toast.error('Giảng viên này đã bị khóa hoặc đã thôi việc từ trước.');
-      return;
-    }
-    
-    // Mở hộp thoại xác nhận thay vì window.confirm
-    setConfirmConfig({
-      isOpen: true,
-      teacher: teacher,
-      isLoading: false
-    });
-  };
 
-  const executeLock = async () => {
-    const { teacher } = confirmConfig;
-    if (!teacher) return;
-
-    setConfirmConfig(prev => ({ ...prev, isLoading: true }));
-    try {
-      await updateTeacherStatus(teacher.id, 'INACTIVE');
-      toast.success('Đã khóa tài khoản giảng viên thành công.');
-      const newTeachers = await getAllTeachers();
-      setTeachers(newTeachers || []);
-      setConfirmConfig({ isOpen: false, teacher: null, isLoading: false });
-    } catch (error) {
-      toast.error(getVietnameseError(error, 'Lỗi khi khóa giảng viên.'));
-      setConfirmConfig(prev => ({ ...prev, isLoading: false }));
-    }
-  };
 
   /* ── Điều khiển Modal ── */
   const openAdd = () => { 
@@ -266,37 +262,92 @@ export default function TeacherListPage() {
         </div>
       </div>
 
+      {/* Thẻ thống kê nhanh (Mini Dashboard) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Tổng số giảng viên', value: teachers.length, icon: <UserCheck size={20} className="text-blue-600" />, bg: 'bg-blue-50' },
+          { label: 'Đang hoạt động', value: teachers.filter(t => t.status === 'ACTIVE').length, icon: <UserCheck size={20} className="text-emerald-600" />, bg: 'bg-emerald-50' },
+          { label: 'Nghỉ phép', value: teachers.filter(t => t.status === 'ON_LEAVE').length, icon: <CalendarDays size={20} className="text-amber-600" />, bg: 'bg-amber-50' },
+          { label: 'Đình chỉ / Thôi việc', value: teachers.filter(t => t.status === 'INACTIVE' || t.status === 'RESIGNED').length, icon: <UserX size={20} className="text-rose-600" />, bg: 'bg-rose-50' }
+        ].map((stat, idx) => (
+          <div key={idx} className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm hover:shadow transition">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${stat.bg}`}>
+              {stat.icon}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+              <h3 className="text-2xl font-bold text-slate-800">{stat.value}</h3>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Khung chứa Bảng biểu */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
 
         {/* Thanh công cụ (Toolbar) */}
-        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-5 border-b border-slate-100 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
 
-          {/* Ô tìm kiếm */}
-          <div className="relative max-w-md w-full">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Tìm theo mã, tên hoặc số điện thoại..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition"
-            />
+          {/* Khối Tìm kiếm & Bộ lọc (Nhóm lại với nhau) */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+            {/* Ô tìm kiếm */}
+            <div className="relative w-full sm:w-[300px]">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Tìm mã, tên, SĐT..."
+                value={searchTerm}
+                onChange={(e) => {setSearchTerm(e.target.value); setPage(1);}}
+                className="w-full pl-11 pr-4 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition"
+              />
+            </div>
+
+            {/* Cụm Select Filters */}
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto">
+              <select
+                value={filterSpecialization}
+                onChange={(e) => { setFilterSpecialization(e.target.value); setPage(1); }}
+                className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition outline-none cursor-pointer w-full sm:w-[160px]"
+              >
+                <option value="ALL">Tất cả môn học</option>
+                {specializations.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterStatus}
+                onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+                className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition outline-none cursor-pointer w-full sm:w-[150px]"
+              >
+                <option value="ALL">Mọi trạng thái</option>
+                <option value="ACTIVE">Hoạt động</option>
+                <option value="ON_LEAVE">Nghỉ phép</option>
+                <option value="INACTIVE">Đình chỉ</option>
+                <option value="RESIGNED">Đã thôi việc</option>
+              </select>
+
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setPage(1); // Reset trang khi đổi sort
+                }}
+                className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition outline-none cursor-pointer w-full sm:w-[140px]"
+              >
+                <option value="newest">Mới nhất</option>
+                <option value="name_asc">Tên (A-Z)</option>
+                <option value="name_desc">Tên (Z-A)</option>
+              </select>
+            </div>
           </div>
 
-          {/* Cụm nút hành động */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={fetchData}
-              disabled={isFetching}
-              title="Làm mới"
-              className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition disabled:opacity-50"
-            >
-              <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
-            </button>
+          {/* Cụm nút hành động (Thêm mới) */}
+          <div className="flex items-center gap-3 shrink-0 w-full xl:w-auto justify-end">
+
 
             <button
               onClick={openAdd}
@@ -313,15 +364,14 @@ export default function TeacherListPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/40">
-                <th className="py-4 px-6">Mã GV</th>
-                <th className="py-4 px-6">Họ và tên</th>
-                <th className="py-4 px-6">Số điện thoại</th>
-                <th className="py-4 px-6">Chuyên môn</th>
-                <th className="py-4 px-6 text-center">Lớp tối đa</th>
-                <th className="py-4 px-6 text-center">Giờ / ngày</th>
-                <th className="py-4 px-6">Trạng thái</th>
-                <th className="py-4 px-6 text-center">Hành động</th>
+              <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/80">
+                <th className="py-3 px-4 text-center w-12">STT</th>
+                <th className="py-3 px-4">Giảng viên</th>
+                <th className="py-3 px-4">Liên hệ</th>
+                <th className="py-3 px-4">Chuyên môn</th>
+                <th className="py-3 px-4">Hạn mức giảng dạy</th>
+                <th className="py-3 px-4">Trạng thái</th>
+                <th className="py-3 px-4 text-center">Hành động</th>
               </tr>
             </thead>
 
@@ -334,51 +384,55 @@ export default function TeacherListPage() {
                 </tr>
               )}
 
-              {!isFetching && paginated.map((t) => (
+              {!isFetching && paginated.map((t, index) => (
                 <tr
                   key={t.id}
-                  className="hover:bg-slate-50/50 transition"
+                  className="hover:bg-slate-50/80 transition border-b border-slate-100 last:border-0"
                 >
-                  {/* Mã GV */}
-                  <td className="py-4 px-6">
-                    <span className="text-blue-600 px-2 py-1 rounded-md text-xs font-semibold bg-blue-50">
-                      {t.teacherCode}
-                    </span>
+                  {/* STT */}
+                  <td className="py-3 px-4 text-center font-semibold text-slate-400 text-sm">
+                    {(currentPage - 1) * pageSize + index + 1}
                   </td>
 
-                  {/* Họ và tên */}
-                  <td className="py-4 px-6 text-slate-900 font-bold">
-                    {t.fullName}
+                  {/* Giảng viên (Name + Mã GV) */}
+                  <td className="py-3 px-4">
+                    <div>
+                      <div className="text-sm font-bold text-slate-800">{t.fullName}</div>
+                      <div className="text-[11px] font-medium text-slate-500 mt-0.5">Mã: {t.teacherCode}</div>
+                    </div>
                   </td>
 
-                  {/* Số điện thoại */}
-                  <td className="py-4 px-6 font-normal text-slate-500">
-                    {t.phone || '—'}
+                  {/* Liên hệ (SĐT) */}
+                  <td className="py-3 px-4">
+                    <div className="text-sm font-medium text-slate-700">
+                      {t.phone ? (
+                        <div className="flex items-center gap-1.5">
+                          <Phone size={13} className="text-slate-400"/> {t.phone}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-xs">Chưa cập nhật</span>
+                      )}
+                    </div>
                   </td>
 
-                  {/* CHUYÊN MÔN: Đã được Mock dữ liệu và tích hợp Tooltip bảo vệ Layout */}
-                  <td className="py-4 px-6">
-                    <div className="flex flex-wrap gap-1 items-center max-w-[220px]">
+                  {/* CHUYÊN MÔN */}
+                  <td className="py-3 px-4">
+                    <div className="flex flex-wrap gap-1.5 items-center max-w-[200px]">
                       {t.specializations?.length > 0 ? (
                         <>
-                          {/* Chỉ hiện tối đa 2 cái đầu tiên */}
                           {t.specializations.slice(0, 2).map((s) => (
                             <span
                               key={s?.id}
-                              className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap"
+                              className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
                             >
                               {s?.name}
                             </span>
                           ))}
-
-                          {/* Từ cái thứ 3 trở đi sẽ nén vào cục badge +X */}
                           {t.specializations.length > 2 && (
                             <div className="group relative cursor-pointer inline-block">
-                              <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold hover:bg-slate-200 transition">
+                              <span className="bg-slate-100 border border-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-[11px] font-bold hover:bg-slate-200 transition">
                                 +{t.specializations.length - 2}
                               </span>
-                              
-                              {/* Tooltip hiển thị khi rê chuột (Hover) */}
                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col gap-1 bg-slate-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-50 w-max max-w-[200px]">
                                 <p className="font-bold border-b border-slate-700 pb-1 mb-1 text-slate-400">
                                   Chuyên môn khác:
@@ -397,44 +451,39 @@ export default function TeacherListPage() {
                     </div>
                   </td>
 
-                  {/* Số lớp tối đa */}
-                  <td className="py-4 px-6 text-center font-normal text-slate-500">
-                    {t.maxClasses}
-                  </td>
-
-                  {/* Số giờ tối đa */}
-                  <td className="py-4 px-6 text-center font-normal text-slate-500">
-                    {t.maxHoursPerDay}h
+                  {/* Hạn mức */}
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-slate-600">
+                      <span className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md border border-slate-200" title="Số lớp tối đa">
+                         <BookOpen size={12} className="text-slate-400"/> {t.maxClasses} lớp
+                      </span>
+                      <span className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md border border-slate-200" title="Giờ dạy tối đa">
+                         <CalendarDays size={12} className="text-slate-400"/> {t.maxHoursPerDay}h / ngày
+                      </span>
+                    </div>
                   </td>
 
                   {/* Trạng thái hoạt động */}
-                  <td className="py-4 px-6">
+                  <td className="py-3 px-4">
                     <StatusBadge status={t.status} />
                   </td>
 
-                  {/* Cột nút Thao tác */}
-                  <td className="py-4 px-6">
+                  {/* Hành động */}
+                  <td className="py-3 px-4">
                     <div className="flex items-center justify-center gap-3 text-slate-400">
                       <button
                         onClick={() => openView(t)}
                         title="Xem chi tiết"
-                        className="hover:text-emerald-600 transition p-1"
+                        className="hover:text-emerald-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
                       >
-                        <Eye size={16} />
+                        <Eye size={14} />
                       </button>
                       <button
                         onClick={() => openEdit(t)}
                         title="Chỉnh sửa"
-                        className="hover:text-blue-600 transition p-1"
+                        className="hover:text-blue-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
                       >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleLock(t)}
-                        title="Đình chỉ (Khóa)"
-                        className={`transition p-1 ${(t.status === 'INACTIVE' || t.status === 'RESIGNED') ? 'opacity-30 cursor-not-allowed' : 'hover:text-amber-500'}`}
-                      >
-                        <Lock size={16} />
+                        <Pencil size={14} />
                       </button>
                     </div>
                   </td>
@@ -477,23 +526,6 @@ export default function TeacherListPage() {
         loading={isSubmitting}
       />
 
-      {/* Component Xác nhận chung */}
-      <ConfirmModal
-        isOpen={confirmConfig.isOpen}
-        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
-        onConfirm={executeLock}
-        isLoading={confirmConfig.isLoading}
-        title="Xác nhận khóa tài khoản"
-        message={
-          <span>
-            Bạn có chắc chắn muốn KHÓA (Ngừng hoạt động) giảng viên <b>{confirmConfig.teacher?.fullName}</b>? <br/><br/>
-            Dữ liệu lịch sử dạy học của giảng viên này vẫn sẽ được giữ lại.
-          </span>
-        }
-        confirmText="Khóa tài khoản"
-        cancelText="Hủy"
-        type="danger"
-      />
     </div>
   );
 }

@@ -8,7 +8,8 @@ import {
   LogOut,
   UserCheck,
   GraduationCap,
-  Award // 🔹 Import thêm icon đại diện cho Chuyên môn (Specialization)
+  Award,
+  History
 } from "lucide-react";
 import { useAuthContext } from "../features/auth/context/AuthContext";
 import ConfirmModal from "../components/ui/ConfirmModal";

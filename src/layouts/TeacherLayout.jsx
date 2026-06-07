@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, ClipboardList, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, ClipboardList, User, LogOut, History } from 'lucide-react';
 import { useAuthContext } from '../features/auth/context/AuthContext';
 import NotificationBell from '../features/teachers/components/NotificationBell';
 import ConfirmModal from '../components/ui/ConfirmModal';
@@ -40,7 +40,7 @@ export default function TeacherLayout() {
       path: '/teacher/profile',
       name: 'Hồ sơ cá nhân',
       icon: <User size={20} />,
-    },
+    }
   ];
 
   return (
@@ -109,7 +109,7 @@ export default function TeacherLayout() {
             <div className="flex items-center gap-3">
               <div className="hidden md:flex flex-col items-end">
                 <p className="text-[15px] text-slate-600">
-                  Xin chào, <span className="font-bold text-slate-800">{user?.name || user?.username || 'Nguyễn Hoàng Dũng'}</span>
+                  <span className="font-bold text-slate-800">{user?.name || user?.username || 'Nguyễn Hoàng Dũng'}</span>
                 </p>
                 <span className="inline-block px-3 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-bold rounded-full uppercase tracking-wide mt-1 border border-indigo-100">
                   {user?.roles?.includes('ROLE_ADMIN') ? 'Quản trị viên' : 'GIẢNG VIÊN'}
