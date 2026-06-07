@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useToast } from '../../../components/ui/Toast';
 import {
   Search,
   Plus,
@@ -27,6 +28,11 @@ import {
    PAGE
 ========================= */
 export default function SpecializationListPage() {
+  const toast = useToast();
+
+  const getErrorMessage = (err) => {
+    return err?.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại!";
+  };
   const [specs, setSpecs] = useState([]);
 
   const [selectedSpecId, setSelectedSpecId] = useState(null);
@@ -35,7 +41,7 @@ export default function SpecializationListPage() {
 
   /* loading */
   const [pageLoading, setPageLoading] = useState(true);
-
+const [isActionLoading, setIsActionLoading] = useState(false);
   /* modal */
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -98,52 +104,42 @@ export default function SpecializationListPage() {
       item.code?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  /* =========================
-      DELETE SPECIALIZATION
+ /* =========================
+     DELETE SPECIALIZATION
   ========================= */
   const handleDeleteSpec = async (item) => {
-    const confirmDelete = window.confirm(`Xóa chuyên môn "${item.name}" ?`);
-
-    if (!confirmDelete) return;
+    if (!window.confirm(`Xóa chuyên môn "${item.name}" ?`)) return;
 
     try {
+      setIsActionLoading(true);
       await deleteSpecialization(item.id);
-
-      await fetchData();
-
-      if (selectedSpecId === item.id) {
-        setSelectedSpecId(null);
-      }
-
-      alert("Xóa chuyên môn thành công");
+      await fetchData(); 
+      if (selectedSpecId === item.id) setSelectedSpecId(null);
+      toast.success("Đã xóa chuyên môn thành công!");
     } catch (error) {
-      console.error(error);
-
-      alert(error?.response?.data?.message || "Xóa chuyên môn thất bại");
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
   /* =========================
-      DELETE LEVEL
+     DELETE LEVEL
   ========================= */
   const handleDeleteLevel = async (levelItem) => {
-    const confirmDelete = window.confirm(`Xóa level "${levelItem.name}" ?`);
-
-    if (!confirmDelete) return;
+    if (!window.confirm(`Xóa level "${levelItem.name}" ?`)) return;
 
     try {
+      setIsActionLoading(true);
       await deleteSpecializationLevel(levelItem.id);
-
       await fetchData();
-
-      alert("Xóa level thành công");
+      toast.success("Đã xóa level thành công!");
     } catch (error) {
-      console.error(error);
-
-      alert(error?.response?.data?.message || "Xóa level thất bại");
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsActionLoading(false);
     }
   };
-
   /* =========================
       LOADING
   ========================= */
