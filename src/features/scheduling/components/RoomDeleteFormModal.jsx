@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Trash2, Loader2 } from 'lucide-react';
 import { deleteRoom } from '../../../services/roomService';
 import { toast } from 'react-hot-toast';
+import { useToast } from '../../../components/ui/Toast'; 
 export default function RoomDeleteFormModal({
   isOpen,
   onClose,
