@@ -7,6 +7,7 @@ import {
   BookMarked,
   Layers,
 } from 'lucide-react';
+import { useToast } from '../../../components/ui/Toast';
 
 /* ─── Cấu hình tùy chọn trạng thái ─────────────────── */
 const STATUS_OPTIONS = [
@@ -40,6 +41,7 @@ export default function TeacherFormModal({
   loading = false,
   isViewMode = false,   // Cờ xác định chế độ Chỉ xem
 }) {
+  const toast = useToast();
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
 
@@ -138,14 +140,14 @@ export default function TeacherFormModal({
     }
 
     /* 2. Số điện thoại */
-    if (form.phone) {
-      if (!/^\d+$/.test(form.phone)) {
-        newErrors.phone = "Số điện thoại chỉ được chứa chữ số.";
-      } else if (form.phone.length !== 10) {
-        newErrors.phone = "Số điện thoại phải có đúng 10 chữ số.";
-      } else if (!form.phone.startsWith('0')) {
-        newErrors.phone = "Số điện thoại phải bắt đầu bằng số 0.";
-      }
+    if (!form.phone) {
+      newErrors.phone = "Số điện thoại không được để trống.";
+    } else if (!/^\d+$/.test(form.phone)) {
+      newErrors.phone = "Số điện thoại chỉ được chứa chữ số.";
+    } else if (form.phone.length !== 10) {
+      newErrors.phone = "Số điện thoại phải có đúng 10 chữ số.";
+    } else if (!form.phone.startsWith('0')) {
+      newErrors.phone = "Số điện thoại phải bắt đầu bằng số 0.";
     }
 
     /* 3. Email (bắt buộc) */
@@ -192,7 +194,7 @@ export default function TeacherFormModal({
 
   const handleSubmitForm = (e) => {
     if (e) e.preventDefault();
-    if (isViewMode) return;
+    if (isViewMode || loading) return;
     
     // Trim và Viết hoa chữ cái đầu cho tên (Title Case)
     let formattedName = form.fullName?.trim() || "";
@@ -204,7 +206,10 @@ export default function TeacherFormModal({
     }
 
     setForm((prev) => ({ ...prev, fullName: formattedName }));
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      toast.error("Dữ liệu nhập vào chưa hợp lệ. Vui lòng kiểm tra lại các trường màu đỏ.");
+      return;
+    }
     onSubmit({ ...form, fullName: formattedName });
   };
 
@@ -259,7 +264,7 @@ export default function TeacherFormModal({
             
             <div className="flex flex-col gap-1.5">
               <label className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-slate-600">
-                <Phone size={15} /> Số điện thoại
+                <Phone size={15} /> Số điện thoại <span className="text-rose-500">*</span>
               </label>
               <input
                 type="tel"
@@ -267,6 +272,7 @@ export default function TeacherFormModal({
                 value={form.phone}
                 onChange={handleChange('phone')}
                 maxLength={10}
+                required
                 disabled={isViewMode}
                 className={`${inputCls} ${isViewMode ? 'bg-slate-100' : ''} ${errors.phone ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
               />
@@ -323,7 +329,7 @@ export default function TeacherFormModal({
                   type="text"
                   value={initialData.username}
                   disabled={true}
-                  className={`${inputCls} bg-slate-100 font-medium text-blue-700`}
+                  className={`${inputCls} bg-slate-100`}
                 />
               </div>
             </div>
