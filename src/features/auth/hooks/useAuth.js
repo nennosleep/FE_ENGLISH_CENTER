@@ -38,7 +38,7 @@ export const useAuth = () => {
       if (roles.some(r => r.includes('ACADEMIC_STAFF'))) {
         defaultPath = '/admin/courses';
       } else if (roles.some(r => r.includes('TEACHER'))) {
-        defaultPath = '/teacher/overview';
+        defaultPath = '/teacher/dashboard';
       }
 
       // Check xem 'from' có phải là trang login hay root không
@@ -48,8 +48,6 @@ export const useAuth = () => {
       }
       
       navigate(fromPath, { replace: true });
-    } catch (err) {
-      throw err;
     } finally {
       setIsLoading(false);
     }

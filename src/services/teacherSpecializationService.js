@@ -1,11 +1,11 @@
-import schedulingAxios from '../config/identityAxios';
+import identityAxios from '../config/identityAxios';
 
 /**
  * Gán chuyên môn cho giảng viên (Assign Specialization)
  * @param {object} payload - Chứa { teacherId, specializationId }
  */
 export const assignTeacherSpecialization = async (payload) => {
-  const response = await schedulingAxios.post('/teacher-specializations', payload);
+  const response = await identityAxios.post('/teacher-specializations', payload);
   return response.data;
 };
 
@@ -15,7 +15,7 @@ export const assignTeacherSpecialization = async (payload) => {
  */
 export const getSpecializationsByTeacherId = async (teacherId) => {
   try {
-    const response = await schedulingAxios.get(`/teacher-specializations/teacher/${teacherId}`);
+    const response = await identityAxios.get(`/teacher-specializations/teacher/${teacherId}`);
     return response.data.data || [];
   } catch (error) {
     console.error(`Lỗi khi lấy chuyên môn của giảng viên ${teacherId}:`, error);
@@ -29,7 +29,7 @@ export const getSpecializationsByTeacherId = async (teacherId) => {
  */
 export const getTeachersBySpecializationId = async (specializationId) => {
   try {
-    const response = await schedulingAxios.get(`/teacher-specializations/specialization/${specializationId}`);
+    const response = await identityAxios.get(`/teacher-specializations/specialization/${specializationId}`);
     return response.data.data || [];
   } catch (error) {
     console.error(`Lỗi khi lấy giảng viên thuộc chuyên môn ${specializationId}:`, error);
@@ -43,7 +43,7 @@ export const getTeachersBySpecializationId = async (specializationId) => {
  * @param {string} specializationId - Định dạng UUID
  */
 export const removeTeacherSpecialization = async (teacherId, specializationId) => {
-  const response = await schedulingAxios.delete('/teacher-specializations', {
+  const response = await identityAxios.delete('/teacher-specializations', {
     params: {
       teacherId,
       specializationId

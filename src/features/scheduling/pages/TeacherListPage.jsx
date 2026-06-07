@@ -1,12 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Search,
   Plus,
   Pencil,
-  Trash2,
   UserCheck,
   UserX,
-  RefreshCw,
   CalendarDays,
   Eye,
   Lock,
@@ -25,8 +23,7 @@ import {
   getAllTeachers,
   createTeacher,
   updateTeacher,
-  updateTeacherStatus,
-  deleteTeacher
+  updateTeacherStatus
 } from '../../../services/teacherService';
 
 import { getSpecializations } from '../../../services/specializationService';
@@ -86,6 +83,11 @@ export default function TeacherListPage() {
   const [confirmConfig, setConfirmConfig] = useState({
     isOpen: false,
     teacher: null,
+    nextStatus: null,
+    title: '',
+    message: '',
+    confirmText: '',
+    type: 'warning',
     isLoading: false
   });
 
@@ -200,7 +202,7 @@ export default function TeacherListPage() {
         toast.success('Cập nhật thông tin giảng viên thành công.');
       } else {
         payload.email = form.email;
-        const response = await createTeacher(payload);
+        await createTeacher(payload);
         toast.success('Tạo giảng viên thành công!');
       }
       
@@ -215,6 +217,60 @@ export default function TeacherListPage() {
       toast.error(getVietnameseError(error, 'Lỗi khi lưu thông tin giảng viên.'));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const openStatusConfirm = (teacher, nextStatus) => {
+    const isResigned = nextStatus === 'RESIGNED';
+    setConfirmConfig({
+      isOpen: true,
+      teacher,
+      nextStatus,
+      title: isResigned ? 'Cho thôi việc giảng viên' : 'Đình chỉ giảng viên',
+      message: isResigned
+        ? `Xác nhận chuyển "${teacher.fullName}" sang trạng thái đã thôi việc. Thao tác này giữ lại dữ liệu lịch sử.`
+        : `Xác nhận đình chỉ "${teacher.fullName}". Giảng viên sẽ không được xem là đang hoạt động.`,
+      confirmText: isResigned ? 'Cho thôi việc' : 'Đình chỉ',
+      type: 'danger',
+      isLoading: false
+    });
+  };
+
+  const closeStatusConfirm = () => {
+    setConfirmConfig({
+      isOpen: false,
+      teacher: null,
+      nextStatus: null,
+      title: '',
+      message: '',
+      confirmText: '',
+      type: 'warning',
+      isLoading: false
+    });
+  };
+
+  const confirmStatusChange = async () => {
+    const { teacher, nextStatus } = confirmConfig;
+    if (!teacher?.id || !nextStatus) return;
+
+    setConfirmConfig((prev) => ({ ...prev, isLoading: true }));
+
+    try {
+      await updateTeacherStatus(teacher.id, nextStatus);
+      setTeachers((prev) =>
+        prev.map((item) =>
+          item.id === teacher.id ? { ...item, status: nextStatus } : item
+        )
+      );
+      toast.success(
+        nextStatus === 'RESIGNED'
+          ? 'Đã chuyển giảng viên sang trạng thái thôi việc.'
+          : 'Đã đình chỉ giảng viên.'
+      );
+      closeStatusConfirm();
+    } catch (error) {
+      toast.error(getVietnameseError(error, 'Lỗi khi cập nhật trạng thái giảng viên.'));
+      setConfirmConfig((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -485,6 +541,24 @@ export default function TeacherListPage() {
                       >
                         <Pencil size={14} />
                       </button>
+                      {t.status !== 'INACTIVE' && t.status !== 'RESIGNED' && (
+                        <button
+                          onClick={() => openStatusConfirm(t, 'INACTIVE')}
+                          title="Đình chỉ"
+                          className="hover:text-amber-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
+                        >
+                          <Lock size={14} />
+                        </button>
+                      )}
+                      {t.status !== 'RESIGNED' && (
+                        <button
+                          onClick={() => openStatusConfirm(t, 'RESIGNED')}
+                          title="Cho thôi việc"
+                          className="hover:text-rose-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
+                        >
+                          <LogOut size={14} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -524,6 +598,17 @@ export default function TeacherListPage() {
         isViewMode={isViewMode}
         specializations={specializations}
         loading={isSubmitting}
+      />
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={closeStatusConfirm}
+        onConfirm={confirmStatusChange}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        type={confirmConfig.type}
+        isLoading={confirmConfig.isLoading}
       />
 
     </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Save, BookOpen, Mail, Phone, User, Lock, Shield, Eye, EyeOff, Edit2, X, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, BookOpen, Mail, User, Lock, Shield, Eye, EyeOff, Edit2, X, Loader2 } from "lucide-react";
 import { useAuthContext } from "../../../features/auth/context/AuthContext";
 import { getTeacherById, updateTeacher } from "../../../services/teacherService";
 import { updateAccount } from "../../../services/accountService";
@@ -98,6 +98,7 @@ export default function TeacherProfilePage() {
       }
       const trimmedEmail = editForm.email.trim();
       const trimmedPhone = editForm.phone.trim();
+      const trimmedUsername = editForm.username.trim();
 
       const teacherPayload = {
         fullName: trimmedName,
@@ -109,7 +110,7 @@ export default function TeacherProfilePage() {
       };
 
       const accountPayload = {
-        username: editForm.username,
+        username: trimmedUsername,
         email: trimmedEmail
       };
       
@@ -119,10 +120,16 @@ export default function TeacherProfilePage() {
           const accountRes = await updateAccount(user.accountId, accountPayload);
           // Cập nhật lại thông tin trong context auth
           if (updateUser) {
-            updateUser({ username: editForm.username, email: trimmedEmail, name: trimmedName });
+            updateUser({ username: trimmedUsername, email: trimmedEmail, name: trimmedName });
           }
-          if (accountRes?.data?.newToken && updateToken) {
-            updateToken(accountRes.data.newToken);
+          const newToken =
+            accountRes?.data?.newToken ??
+            accountRes?.newToken ??
+            accountRes?.data?.accessToken ??
+            accountRes?.accessToken;
+
+          if (newToken && updateToken) {
+            updateToken(newToken);
           }
         }
       } catch (accountError) {

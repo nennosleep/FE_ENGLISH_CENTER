@@ -1,10 +1,10 @@
-import schedulingAxios from "../config/identityAxios";
+import identityAxios from "../config/identityAxios";
 
 /* =========================
    GET ALL LEVELS
 ========================= */
 export const getSpecializationLevels = async () => {
-  const response = await schedulingAxios.get("/specialization-levels");
+  const response = await identityAxios.get("/specialization-levels");
 
   console.log(response.data);
 
@@ -15,7 +15,7 @@ export const getSpecializationLevels = async () => {
    GET LEVEL BY ID
 ========================= */
 export const getSpecializationLevelById = async (id) => {
-  const response = await schedulingAxios.get(`/specialization-levels/${id}`);
+  const response = await identityAxios.get(`/specialization-levels/${id}`);
 
   console.log(response.data);
 
@@ -26,7 +26,7 @@ export const getSpecializationLevelById = async (id) => {
    GET LEVEL BY CODE
 ========================= */
 export const getSpecializationLevelByCode = async (code) => {
-  const response = await schedulingAxios.get(
+  const response = await identityAxios.get(
     `/specialization-levels/code/${code}`
   );
 
@@ -39,7 +39,7 @@ export const getSpecializationLevelByCode = async (code) => {
    GET LEVELS BY SPECIALIZATION ID
 ========================= */
 export const getLevelsBySpecializationId = async (specializationId) => {
-  const response = await schedulingAxios.get(
+  const response = await identityAxios.get(
     `/specialization-levels/specialization/${specializationId}`
   );
 
@@ -52,7 +52,7 @@ export const getLevelsBySpecializationId = async (specializationId) => {
    CREATE LEVEL
 ========================= */
 export const createSpecializationLevel = async (levelData) => {
-  const response = await schedulingAxios.post(
+  const response = await identityAxios.post(
     "/specialization-levels",
     levelData
   );
@@ -66,7 +66,7 @@ export const createSpecializationLevel = async (levelData) => {
    UPDATE LEVEL
 ========================= */
 export const updateSpecializationLevel = async (id, levelData) => {
-  const response = await schedulingAxios.put(
+  const response = await identityAxios.put(
     `/specialization-levels/${id}`,
     levelData
   );
@@ -80,7 +80,7 @@ export const updateSpecializationLevel = async (id, levelData) => {
    DELETE LEVEL
 ========================= */
 export const deleteSpecializationLevel = async (id) => {
-  const response = await schedulingAxios.delete(`/specialization-levels/${id}`);
+  const response = await identityAxios.delete(`/specialization-levels/${id}`);
 
   console.log(response.data);
 

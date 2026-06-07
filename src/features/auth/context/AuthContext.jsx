@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 
 /**
  * AuthContext — Quản lý trạng thái đăng nhập toàn cục.
@@ -69,13 +69,15 @@ export function AuthProvider({ children }) {
   const hasRole = useCallback(
     (roleOrRoles) => {
       if (!user?.roles) return false;
+
+      const normalizeRole = (role = '') =>
+        String(role).replace(/^ROLE_/, '').toUpperCase();
       
       const checkRole = (requiredRole) => {
-        // Bỏ tiền tố ROLE_ nếu có để so sánh linh hoạt
-        const cleanRequired = requiredRole.replace(/^ROLE_/, '');
+        const cleanRequired = normalizeRole(requiredRole);
         return user.roles.some(userRole => {
-          const cleanUser = userRole.replace(/^ROLE_/, '');
-          return cleanUser.includes(cleanRequired);
+          const cleanUser = normalizeRole(userRole);
+          return cleanUser === cleanRequired || cleanUser.startsWith(`${cleanRequired}_`);
         });
       };
 

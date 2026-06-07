@@ -1,4 +1,3 @@
-import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 
@@ -20,7 +19,7 @@ export default function PrivateRoute({ children, requiredRole }) {
       return <Navigate to="/admin" replace />;
     }
     if (roles.includes('ROLE_TEACHER')) {
-      return <Navigate to="/teacher/schedule" replace />;
+      return <Navigate to="/teacher/dashboard" replace />;
     }
     
     // Fallback nếu không có Role nào hợp lệ
