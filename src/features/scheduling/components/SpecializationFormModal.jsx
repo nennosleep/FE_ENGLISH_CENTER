@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { X, FileText, Code, ArrowUpDown } from "lucide-react";
+import { useToast } from '../../../components/ui/Toast'; // Đường dẫn tới hook Toast của bạn
+export const useNotification = () => {
+  const toast = useToast();
+  return {
+    success: (msg) => toast.success(msg || 'Thao tác thành công!'),
+    error: (err, defaultMsg = 'Có lỗi xảy ra!') => {
+      // Ưu tiên lấy message từ server, nếu không có thì lấy message mặc định
+      const message = err?.response?.data?.message || err?.message || defaultMsg;
+      toast.error(message);
+    },
+    warning: (msg) => toast.warning(msg)
+  };
+};
 
-/* =========================
-   SERVICES
-========================= */
 import {
   createSpecialization,
   updateSpecialization,
@@ -48,7 +58,7 @@ export default function SpecializationFormModal({
 }) {
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(false);
-
+const notify = useNotification();
   /* =========================
      MODE
   ========================= */
@@ -107,78 +117,40 @@ export default function SpecializationFormModal({
   /* =========================
      SUBMIT
   ========================= */
-  const handleSubmit = async (e) => {
+ /* =========================
+     SUBMIT
+  ========================= */
+ const handleSubmit = async (e) => {
     if (e) e.preventDefault();
 
+    // Kiểm tra nhanh phía client
     if (!form.code?.trim() || !form.name?.trim()) {
-      alert("Vui lòng nhập đầy đủ thông tin");
+      notify.warning("Vui lòng nhập đầy đủ thông tin!"); // 2. Dùng notify thay cho alert
       return;
     }
 
     try {
       setLoading(true);
-
       let responseData = null;
 
-      /* =========================
-         SPECIALIZATION
-      ========================= */
-
-      // CREATE SPECIALIZATION
       if (mode === "SPEC_ADD") {
-        responseData = await createSpecialization({
-          code: form.code,
-          name: form.name,
-          description: form.description,
-          isActive: form.isActive,
-        });
+        responseData = await createSpecialization({ code: form.code, name: form.name, description: form.description, isActive: form.isActive });
+      } else if (mode === "SPEC_EDIT") {
+        responseData = await updateSpecialization(form.id, { name: form.name, description: form.description, isActive: form.isActive });
+      } else if (mode === "LEVEL_ADD") {
+        responseData = await createSpecializationLevel({ ...form, specializationId: parentSpecId });
+      } else if (mode === "LEVEL_EDIT") {
+        responseData = await updateSpecializationLevel(form.id, { name: form.name, description: form.description, levelOrder: form.levelOrder, isActive: form.isActive });
       }
 
-      // UPDATE SPECIALIZATION
-      else if (mode === "SPEC_EDIT") {
-        responseData = await updateSpecialization(form.id, {
-          name: form.name,
-          description: form.description,
-          isActive: form.isActive,
-        });
-      }
-
-      /* =========================
-         LEVEL
-      ========================= */
-
-      // CREATE LEVEL
-      else if (mode === "LEVEL_ADD") {
-        responseData = await createSpecializationLevel({
-          code: form.code,
-          name: form.name,
-          description: form.description,
-          levelOrder: form.levelOrder,
-          isActive: form.isActive,
-          specializationId: parentSpecId,
-        });
-      }
-
-      // UPDATE LEVEL
-      else if (mode === "LEVEL_EDIT") {
-        responseData = await updateSpecializationLevel(form.id, {
-          name: form.name,
-          description: form.description,
-          levelOrder: form.levelOrder,
-          isActive: form.isActive,
-        });
-      }
-
-      /* CALLBACK RELOAD */
-      if (onSuccess) {
-        await onSuccess(responseData);
-      }
-
+      notify.success("Lưu dữ liệu thành công!"); // 3. Thông báo thành công
+      if (onSuccess) await onSuccess(responseData);
       onClose();
-    } catch (error) {
-      console.error(error);
 
-      alert(error?.response?.data?.message || "Có lỗi xảy ra!");
+    } catch (error) {
+      console.error("Lỗi:", error);
+      // 4. Tự động lấy message từ server hoặc mặc định
+      notify.error(error, "Đã có lỗi hệ thống xảy ra, vui lòng thử lại sau!"); 
     } finally {
       setLoading(false);
     }
