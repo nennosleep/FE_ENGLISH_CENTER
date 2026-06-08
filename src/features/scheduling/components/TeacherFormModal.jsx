@@ -8,6 +8,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
+import { getAssignmentsByTeacherId } from '../../../services/teacherAssignmentService';
 
 /* ─── Cấu hình tùy chọn trạng thái ─────────────────── */
 const STATUS_OPTIONS = [
@@ -44,6 +45,7 @@ export default function TeacherFormModal({
   const toast = useToast();
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
+  const [isChecking, setIsChecking] = useState(false);
 
   const displaySpecializations = specializations;
 
@@ -135,7 +137,7 @@ export default function TeacherFormModal({
       newErrors.fullName = "Họ và tên không được vượt quá 50 ký tự.";
     } else if (/\d/.test(trimmedName)) {
       newErrors.fullName = "Họ và tên không được chứa chữ số.";
-    } else if (/[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?`~]/.test(trimmedName)) {
+    } else if (/[!@#$%^&*(),.?":{}|<>[\]/]/g.test(trimmedName)) {
       newErrors.fullName = "Họ và tên không được chứa ký tự đặc biệt.";
     }
 
@@ -156,9 +158,8 @@ export default function TeacherFormModal({
       newErrors.email = "Email không được để trống.";
     } else if (/\s/.test(form.email)) {
       newErrors.email = "Email không được chứa khoảng trắng.";
-    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmedEmail)) {
-      // Changed to generic email regex since @gmail.com might be too restrictive, but if required we can keep @gmail.com
-      newErrors.email = "Email phải đúng định dạng.";
+    } else if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(trimmedEmail)) {
+      newErrors.email = "Email phải có đuôi @gmail.com.";
     } else if (/\.{2,}/.test(trimmedEmail.split('@')[0])) {
       newErrors.email = "Email không được chứa hai dấu chấm liên tiếp.";
     } else if (trimmedEmail.split('@')[0].startsWith('.') || trimmedEmail.split('@')[0].endsWith('.')) {
@@ -192,9 +193,9 @@ export default function TeacherFormModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmitForm = (e) => {
+  const handleSubmitForm = async (e) => {
     if (e) e.preventDefault();
-    if (isViewMode || loading) return;
+    if (isViewMode || loading || isChecking) return;
     
     // Trim và Viết hoa chữ cái đầu cho tên (Title Case)
     let formattedName = form.fullName?.trim() || "";
@@ -210,6 +211,40 @@ export default function TeacherFormModal({
       toast.error("Dữ liệu nhập vào chưa hợp lệ. Vui lòng kiểm tra lại các trường màu đỏ.");
       return;
     }
+
+    if (initialData) {
+      try {
+        setIsChecking(true);
+        const assignments = await getAssignmentsByTeacherId(initialData.id);
+        const activeAssignments = assignments.filter(a => a.status === 'PENDING' || a.status === 'ACCEPTED');
+
+        // 1. Chặn cứng: Giảm maxClasses
+        if (form.maxClasses < activeAssignments.length) {
+          toast.error(`Giảng viên đang nhận ${activeAssignments.length} lớp. Không thể giảm số lớp tối đa xuống ${form.maxClasses}.`);
+          return;
+        }
+
+        // 2. Chặn cứng: Rút chuyên môn
+        const removedSpecs = initialData.specializationIds.filter(id => !form.specializationIds.includes(id));
+        if (removedSpecs.length > 0 && activeAssignments.length > 0) {
+          // Báo lỗi rõ ràng
+          toast.error(`Giảng viên đang có ${activeAssignments.length} lịch dạy. Không thể rút bớt chuyên môn.`);
+          return;
+        }
+
+        // 3. Chặn cứng: Đổi trạng thái sang INACTIVE/RESIGNED
+        if ((form.status === 'INACTIVE' || form.status === 'RESIGNED') && activeAssignments.length > 0) {
+          toast.error(`Không thể đổi trạng thái sang ${form.status === 'INACTIVE' ? 'Đình chỉ' : 'Thôi việc'} vì giảng viên đang có ${activeAssignments.length} lịch dạy.`);
+          return;
+        }
+      } catch (err) {
+        console.warn("Bỏ qua kiểm tra phân công do lỗi từ hệ thống khác (CORS/403):", err);
+        // Không block save, cho phép tiếp tục vì user đã dặn
+      } finally {
+        setIsChecking(false);
+      }
+    }
+
     onSubmit({ ...form, fullName: formattedName });
   };
 
@@ -426,7 +461,7 @@ export default function TeacherFormModal({
             <button
               type="button"
               onClick={handleSubmitForm}
-              disabled={loading || !form.fullName?.trim() || (!initialData && !form.email?.trim())}
+              disabled={loading || isChecking || !form.fullName?.trim() || (!initialData && !form.email?.trim())}
               className="px-5 py-2 text-sm font-semibold text-white rounded-xl transition hover:opacity-90 disabled:opacity-60 shadow-sm"
               style={{ background: '#1b3392' }}
             >

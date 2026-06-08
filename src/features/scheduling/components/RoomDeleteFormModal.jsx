@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Trash2, Loader2 } from 'lucide-react';
 import { deleteRoom } from '../../../services/roomService';
-import { toast } from 'react-hot-toast';
 import { useToast } from '../../../components/ui/Toast'; 
 export default function RoomDeleteFormModal({
   isOpen,
@@ -10,6 +9,7 @@ export default function RoomDeleteFormModal({
   onRefresh,
 }) {
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
 
   if (!isOpen || !room) return null;
 
@@ -23,6 +23,7 @@ export default function RoomDeleteFormModal({
 
       onRefresh?.();
       onClose?.();
+      toast.success('Xóa phòng thành công');
     
     } finally {
       setLoading(false);

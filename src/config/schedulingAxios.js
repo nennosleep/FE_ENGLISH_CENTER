@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
 const schedulingAxios = axios.create({
   baseURL: import.meta.env.VITE_SCHEDULING_API,
   headers: {
@@ -28,7 +27,6 @@ schedulingAxios.interceptors.response.use(
 
     if (apiError?.message) {
       console.error(apiError.message);
-      toast.error(apiError.message);
     }
 
     return Promise.reject(apiError || error);

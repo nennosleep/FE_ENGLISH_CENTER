@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Bell, Clock } from 'lucide-react';
+import { Bell, Clock, Loader2 } from 'lucide-react';
 import { useAuthContext } from '../../auth/context/AuthContext';
 import {
   getNotifications,
@@ -41,6 +41,7 @@ export default function NotificationBell() {
   const toast = useToast();
 
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const fetchNotifications = useCallback(async () => {
@@ -50,10 +51,13 @@ export default function NotificationBell() {
     }
 
     try {
+      setLoading(true);
       const data = await getNotifications(accountId);
       setNotifications((Array.isArray(data) ? data : []).map(normalizeNotification));
     } catch (error) {
       console.error('Lỗi lấy thông báo:', error);
+    } finally {
+      setLoading(false);
     }
   }, [accountId]);
 
@@ -133,7 +137,12 @@ export default function NotificationBell() {
           </div>
 
           <div className="max-h-[320px] overflow-y-auto">
-            {notifications.length > 0 ? (
+            {loading ? (
+              <div className="flex flex-col items-center justify-center p-8 text-slate-500">
+                <Loader2 size={24} className="animate-spin text-blue-500 mb-2" />
+                <span className="text-sm font-medium">Đang tải thông báo...</span>
+              </div>
+            ) : notifications.length > 0 ? (
               notifications.map((item, index) => (
                 <button
                   key={item.id ?? `${item.title}-${index}`}

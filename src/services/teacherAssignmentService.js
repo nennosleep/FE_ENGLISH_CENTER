@@ -25,6 +25,14 @@ export const getAssignmentsByClassId = async (classId) => {
 };
 
 /**
+ * Lấy danh sách phân công theo teacherId
+ */
+export const getAssignmentsByTeacherId = async (teacherId) => {
+    const response = await schedulingAxios.get(`/teacher-assignments/teacher/${teacherId}`);
+    return response.data.data;
+};
+
+/**
  * Tạo mới một phân công giáo viên
  * @param {Object} assignmentData - Dữ liệu TeacherAssignmentRequest
  */

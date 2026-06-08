@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
+import { getHomeRouteByRoles } from '../../../utils/roleUtils';
 
 export default function PrivateRoute({ children, requiredRole }) {
   const { user, isAuthenticated, hasRole } = useAuthContext();
@@ -15,15 +16,8 @@ export default function PrivateRoute({ children, requiredRole }) {
     const roles = user?.roles || [];
     
     // Tự động điều hướng về đúng sân nhà của từng Role để không bị kẹt
-    if (roles.includes('ROLE_ACADEMIC_STAFF')) {
-      return <Navigate to="/admin" replace />;
-    }
-    if (roles.includes('ROLE_TEACHER')) {
-      return <Navigate to="/teacher/dashboard" replace />;
-    }
-    
-    // Fallback nếu không có Role nào hợp lệ
-    return <Navigate to="/auth/login" replace />;
+    const homeRoute = getHomeRouteByRoles(roles);
+    return <Navigate to={homeRoute} replace />;
   }
 
   // 3. Hợp lệ -> Cho phép truy cập

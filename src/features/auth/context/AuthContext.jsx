@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { checkHasRole } from '../../../utils/roleUtils';
+import { isTokenValid } from '../../../utils/jwtUtils';
 
 /**
  * AuthContext — Quản lý trạng thái đăng nhập toàn cục.
@@ -15,11 +17,25 @@ const STORAGE_KEY = 'auth_user';
 // Helper: đọc user từ localStorage hoặc sessionStorage khi app khởi động
 function loadUserFromStorage() {
   try {
-    const rawSession = sessionStorage.getItem(STORAGE_KEY);
-    if (rawSession) return JSON.parse(rawSession);
+    let raw = sessionStorage.getItem(STORAGE_KEY);
+    let token = sessionStorage.getItem('token');
+    
+    if (!raw || !token) {
+      raw = localStorage.getItem(STORAGE_KEY);
+      token = localStorage.getItem('token');
+    }
 
-    const rawLocal = localStorage.getItem(STORAGE_KEY);
-    return rawLocal ? JSON.parse(rawLocal) : null;
+    if (raw && token) {
+      if (!isTokenValid(token)) {
+        localStorage.removeItem('token');
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+      return JSON.parse(raw);
+    }
+    return null;
   } catch {
     return null;
   }
@@ -62,29 +78,22 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  // Kiểm tra token còn hợp lệ không (đơn giản: check có token không)
-  const isAuthenticated = Boolean(user && (localStorage.getItem('token') || sessionStorage.getItem('token')));
+  // Kiểm tra token còn hợp lệ không
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  const isAuthenticated = Boolean(user && isTokenValid(token));
 
-  // Kiểm tra user có role cụ thể không (hỗ trợ truyền mảng roles và match tương đối, vd: TEACHER sẽ match TEACHER_TOEIC)
+  // Auto logout if token expires while app is running
+  useEffect(() => {
+    if (user && token && !isTokenValid(token)) {
+      clearUser();
+    }
+  }, [user, token, clearUser]);
+
+  // Kiểm tra user có role cụ thể không (sử dụng utility dùng chung)
   const hasRole = useCallback(
     (roleOrRoles) => {
       if (!user?.roles) return false;
-
-      const normalizeRole = (role = '') =>
-        String(role).replace(/^ROLE_/, '').toUpperCase();
-      
-      const checkRole = (requiredRole) => {
-        const cleanRequired = normalizeRole(requiredRole);
-        return user.roles.some(userRole => {
-          const cleanUser = normalizeRole(userRole);
-          return cleanUser === cleanRequired || cleanUser.startsWith(`${cleanRequired}_`);
-        });
-      };
-
-      if (Array.isArray(roleOrRoles)) {
-        return roleOrRoles.some(checkRole);
-      }
-      return checkRole(roleOrRoles);
+      return checkHasRole(user.roles, roleOrRoles);
     },
     [user]
   );

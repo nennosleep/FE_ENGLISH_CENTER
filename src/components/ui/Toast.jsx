@@ -91,6 +91,11 @@ function ToastItem({ id, variant = 'info', message, duration, onClose }) {
   const cfg = VARIANTS[variant] ?? VARIANTS.info;
   const dur = duration ?? DEFAULT_DURATION;
 
+  const handleClose = useCallback(() => {
+    setLeaving(true);
+    setTimeout(() => onClose(id), 300);
+  }, [id, onClose]);
+
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 16);
     return () => clearTimeout(t);
@@ -99,12 +104,7 @@ function ToastItem({ id, variant = 'info', message, duration, onClose }) {
   useEffect(() => {
     const t = setTimeout(handleClose, dur);
     return () => clearTimeout(t);
-  }, []);
-
-  const handleClose = () => {
-    setLeaving(true);
-    setTimeout(() => onClose(id), 300);
-  };
+  }, [dur, handleClose]);
 
   const isIn = visible && !leaving;
 

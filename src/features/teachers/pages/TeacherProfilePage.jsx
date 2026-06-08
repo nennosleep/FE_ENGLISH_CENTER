@@ -75,8 +75,8 @@ export default function TeacherProfilePage() {
     // Spaces are already stripped during input.
 
     // Validate Email
-    if (!/^[A-Za-z0-9+_.-]+@gmail\.com$/.test(editForm.email)) {
-      toast.error("Email phải đúng định dạng và có đuôi @gmail.com");
+    if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(editForm.email)) {
+      toast.error("Email phải có đuôi @gmail.com");
       return;
     }
 
@@ -114,40 +114,27 @@ export default function TeacherProfilePage() {
         email: trimmedEmail
       };
       
-      await updateTeacher(user.teacherId, teacherPayload);
-      try {
-        if (user.accountId) {
-          const accountRes = await updateAccount(user.accountId, accountPayload);
-          // Cập nhật lại thông tin trong context auth
-          if (updateUser) {
-            updateUser({ username: trimmedUsername, email: trimmedEmail, name: trimmedName });
-          }
-          const newToken =
-            accountRes?.data?.newToken ??
-            accountRes?.newToken ??
-            accountRes?.data?.accessToken ??
-            accountRes?.accessToken;
+      // 1. Cập nhật Account trước (Username, Email)
+      if (user.accountId) {
+        const accountRes = await updateAccount(user.accountId, accountPayload);
+        
+        // Cập nhật lại thông tin trong context auth
+        if (updateUser) {
+          updateUser({ username: trimmedUsername, email: trimmedEmail, name: trimmedName });
+        }
+        const newToken =
+          accountRes?.data?.newToken ??
+          accountRes?.newToken ??
+          accountRes?.data?.accessToken ??
+          accountRes?.accessToken;
 
-          if (newToken && updateToken) {
-            updateToken(newToken);
-          }
+        if (newToken && updateToken) {
+          updateToken(newToken);
         }
-      } catch (accountError) {
-        console.error("Lỗi khi cập nhật tài khoản", accountError);
-        toast.error("Cập nhật hồ sơ không hoàn tất. Vui lòng thử lại.");
-        // Re-fetch profile data to ensure UI shows actual server state
-        if (user?.teacherId) {
-          const data = await getTeacherById(user.teacherId);
-          setTeacherData(data);
-          setEditForm({
-            name: data.fullName || user.name || "",
-            phone: data.phone || "",
-            username: user.username || "",
-            email: data.email || user.email || "",
-          });
-        }
-        return;
       }
+
+      // 2. Sau khi Account OK, mới cập nhật Teacher (FullName, Phone)
+      await updateTeacher(user.teacherId, teacherPayload);
 
       setTeacherData(prev => ({ ...prev, fullName: trimmedName, phone: trimmedPhone, email: trimmedEmail }));
       setIsEditing(false);
