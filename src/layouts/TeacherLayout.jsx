@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, CalendarDays, ClipboardList, User, LogOut, History } from 'lucide-react';
 import { useAuthContext } from '../features/auth/context/AuthContext';
-import NotificationBell from '../features/teachers/components/NotificationBell';
 import ConfirmModal from '../components/ui/ConfirmModal';
 
 export default function TeacherLayout() {
@@ -104,7 +103,6 @@ export default function TeacherLayout() {
 
           {/* Thông tin tài khoản góc phải */}
           <div className="flex items-center gap-6">
-            <NotificationBell />
 
             <div className="flex items-center gap-3">
               <div className="hidden md:flex flex-col items-end">

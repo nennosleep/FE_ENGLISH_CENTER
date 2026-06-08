@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useAuthContext } from "../features/auth/context/AuthContext";
 import ConfirmModal from "../components/ui/ConfirmModal";
-import NotificationBell from "../features/teachers/components/NotificationBell";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -135,7 +134,6 @@ export default function AdminLayout() {
 
           {/* Thông vị tài khoản góc phải */}
           <div className="flex items-center gap-6">
-            <NotificationBell />
             
             <div className="flex items-center gap-3">
               <div className="text-right">
