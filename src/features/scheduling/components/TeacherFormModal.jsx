@@ -193,7 +193,7 @@ export default function TeacherFormModal({
 
   const handleSubmitForm = async (e) => {
     if (e) e.preventDefault();
-    if (isViewMode || loading || isChecking) return;
+    if (isViewMode || loading) return;
     
     // Trim và Viết hoa chữ cái đầu cho tên (Title Case)
     let formattedName = form.fullName?.trim() || "";
