@@ -8,7 +8,6 @@ import {
   Layers,
 } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
-import { checkTeacherHasFutureSessions } from '../../../services/sessionTeacherService';
 
 /* ─── Cấu hình tùy chọn trạng thái ─────────────────── */
 const STATUS_OPTIONS = [
@@ -45,7 +44,6 @@ export default function TeacherFormModal({
   const toast = useToast();
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
-  const [isChecking, setIsChecking] = useState(false);
 
   const displaySpecializations = specializations;
 
@@ -212,38 +210,7 @@ export default function TeacherFormModal({
       return;
     }
 
-    if (initialData) {
-      try {
-        setIsChecking(true);
-        const hasFutureSessions = await checkTeacherHasFutureSessions(initialData.id);
 
-        // 1. Chặn cứng: Giảm maxClasses
-        if (form.maxClasses < initialData.maxClasses && hasFutureSessions) {
-          toast.error(`Giảng viên đang có lịch dạy. Không thể giảm số lớp tối đa.`);
-          return;
-        }
-
-        // 2. Chặn cứng: Rút chuyên môn
-        const removedSpecs = initialData.specializationIds.filter(id => !form.specializationIds.includes(id));
-        if (removedSpecs.length > 0 && hasFutureSessions) {
-          // Báo lỗi rõ ràng
-          toast.error(`Giảng viên đang có lịch dạy. Không thể rút bớt chuyên môn.`);
-          return;
-        }
-
-        // 3. Chặn cứng: Đổi trạng thái sang INACTIVE/RESIGNED
-        if ((form.status === 'INACTIVE' || form.status === 'RESIGNED') && hasFutureSessions) {
-          toast.error(`Không thể đổi trạng thái sang ${form.status === 'INACTIVE' ? 'Đình chỉ' : 'Thôi việc'} vì giảng viên đang có lịch dạy.`);
-          return;
-        }
-      } catch (err) {
-        console.error("Lỗi khi kiểm tra phân công giảng viên:", err);
-        toast.error("Không thể kiểm tra dữ liệu phân công giảng viên. Vui lòng thử lại sau.");
-        return;
-      } finally {
-        setIsChecking(false);
-      }
-    }
 
     onSubmit({ ...form, fullName: formattedName });
   };
@@ -461,7 +428,7 @@ export default function TeacherFormModal({
             <button
               type="button"
               onClick={handleSubmitForm}
-              disabled={loading || isChecking || !form.fullName?.trim() || (!initialData && !form.email?.trim())}
+              disabled={loading || !form.fullName?.trim() || (!initialData && !form.email?.trim())}
               className="px-5 py-2 text-sm font-semibold text-white rounded-xl transition hover:opacity-90 disabled:opacity-60 shadow-sm"
               style={{ background: '#1b3392' }}
             >
