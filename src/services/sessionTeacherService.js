@@ -94,3 +94,16 @@ export const getAvailableTeachersForSubstitute = async (classId, currentTeacherI
     throw error;
   }
 };
+
+/**
+ * Kiểm tra xem giáo viên có ca học trong tương lai hay không
+ */
+export const checkTeacherHasFutureSessions = async (teacherId) => {
+  try {
+    const response = await schedulingAxios.get(`/session-teachers/teachers/${teacherId}/has-future-sessions`);
+    return response.data; // trả về boolean
+  } catch (error) {
+    console.error(`Lỗi khi kiểm tra ca học tương lai của giáo viên ${teacherId}:`, error);
+    throw error;
+  }
+};

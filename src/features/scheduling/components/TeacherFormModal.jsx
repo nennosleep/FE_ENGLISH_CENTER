@@ -8,7 +8,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
-import { getAssignmentsByTeacherId } from '../../../services/teacherAssignmentService';
+import { checkTeacherHasFutureSessions } from '../../../services/sessionTeacherService';
 
 /* ─── Cấu hình tùy chọn trạng thái ─────────────────── */
 const STATUS_OPTIONS = [
@@ -215,26 +215,25 @@ export default function TeacherFormModal({
     if (initialData) {
       try {
         setIsChecking(true);
-        const assignments = await getAssignmentsByTeacherId(initialData.id);
-        const activeAssignments = assignments.filter(a => a.status === 'PENDING' || a.status === 'ACCEPTED');
+        const hasFutureSessions = await checkTeacherHasFutureSessions(initialData.id);
 
         // 1. Chặn cứng: Giảm maxClasses
-        if (form.maxClasses < activeAssignments.length) {
-          toast.error(`Giảng viên đang nhận ${activeAssignments.length} lớp. Không thể giảm số lớp tối đa xuống ${form.maxClasses}.`);
+        if (form.maxClasses < initialData.maxClasses && hasFutureSessions) {
+          toast.error(`Giảng viên đang có lịch dạy. Không thể giảm số lớp tối đa.`);
           return;
         }
 
         // 2. Chặn cứng: Rút chuyên môn
         const removedSpecs = initialData.specializationIds.filter(id => !form.specializationIds.includes(id));
-        if (removedSpecs.length > 0 && activeAssignments.length > 0) {
+        if (removedSpecs.length > 0 && hasFutureSessions) {
           // Báo lỗi rõ ràng
-          toast.error(`Giảng viên đang có ${activeAssignments.length} lịch dạy. Không thể rút bớt chuyên môn.`);
+          toast.error(`Giảng viên đang có lịch dạy. Không thể rút bớt chuyên môn.`);
           return;
         }
 
         // 3. Chặn cứng: Đổi trạng thái sang INACTIVE/RESIGNED
-        if ((form.status === 'INACTIVE' || form.status === 'RESIGNED') && activeAssignments.length > 0) {
-          toast.error(`Không thể đổi trạng thái sang ${form.status === 'INACTIVE' ? 'Đình chỉ' : 'Thôi việc'} vì giảng viên đang có ${activeAssignments.length} lịch dạy.`);
+        if ((form.status === 'INACTIVE' || form.status === 'RESIGNED') && hasFutureSessions) {
+          toast.error(`Không thể đổi trạng thái sang ${form.status === 'INACTIVE' ? 'Đình chỉ' : 'Thôi việc'} vì giảng viên đang có lịch dạy.`);
           return;
         }
       } catch (err) {
