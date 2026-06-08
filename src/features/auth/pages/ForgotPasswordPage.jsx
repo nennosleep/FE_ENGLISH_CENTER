@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Mail,
   Loader2,
@@ -13,23 +13,32 @@ import { useToast } from '../../../components/ui/Toast';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(location.state?.email || '');
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const isFromProfile = location.state?.fromProfile === true;
 
   /* Dịch lỗi backend sang Tiếng Việt */
   const getViError = (err) => {
-    const msg = err?.response?.data?.message?.toLowerCase() || '';
+    const originalMsg = err?.response?.data?.message;
+    const msg = originalMsg?.toLowerCase() || '';
     const status = err?.response?.status;
+    
+    // Nếu BE gửi lỗi trực tiếp bằng Tiếng Việt, hiển thị luôn thay vì fallback
+    if (originalMsg && /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/.test(msg)) {
+      return originalMsg;
+    }
+
     if (msg.includes('not found') || msg.includes('not exist')) return 'Không tìm thấy tài khoản với email này.';
     if (msg.includes('invalid') && msg.includes('email')) return 'Địa chỉ email không hợp lệ.';
     if (msg.includes('too many') || msg.includes('rate limit')) return 'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.';
     if (status === 429) return 'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.';
     if (status === 500) return 'Lỗi hệ thống. Vui lòng thử lại sau.';
     if (!err?.response) return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
-    return 'Không tìm thấy tài khoản với email này.';
+    return originalMsg || 'Không tìm thấy tài khoản với email này.';
   };
 
   const handleSubmit = async (e) => {
@@ -235,27 +244,24 @@ export default function ForgotPasswordPage() {
           </button>
 
           {/* Back */}
-          <Link
-            to="/auth/login"
-
-            className="
-              mt-0.5
-
-              flex items-center justify-center gap-1.5
-
-              text-[0.825rem]
-              font-medium
-              text-slate-500
-
-              no-underline
-              transition
-
-              hover:text-[#1b3392]
-            "
-          >
-            <ArrowLeft size={15} />
-            Quay lại đăng nhập
-          </Link>
+          {isFromProfile ? (
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="mt-0.5 flex items-center justify-center gap-1.5 text-[0.825rem] font-medium text-slate-500 hover:text-[#1b3392]"
+            >
+              <ArrowLeft size={15} />
+              Quay lại Hồ sơ
+            </button>
+          ) : (
+            <Link
+              to="/auth/login"
+              className="mt-0.5 flex items-center justify-center gap-1.5 text-[0.825rem] font-medium text-slate-500 no-underline transition hover:text-[#1b3392]"
+            >
+              <ArrowLeft size={15} />
+              Quay lại đăng nhập
+            </Link>
+          )}
 
         </form>
       )}

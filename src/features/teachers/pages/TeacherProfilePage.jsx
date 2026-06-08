@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Save, BookOpen, Mail, User, Lock, Shield, Eye, EyeOff, Edit2, X, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuthContext } from "../../../features/auth/context/AuthContext";
 import { getTeacherById, updateTeacher } from "../../../services/teacherService";
 import { updateAccount } from "../../../services/accountService";
@@ -438,7 +439,18 @@ export default function TeacherProfilePage() {
                 { key: "confirm", label: "Xác nhận mật khẩu mới" },
               ].map(({ key, label }) => (
                 <div key={key}>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-sm font-medium text-slate-700">{label}</label>
+                    {key === 'current' && (
+                      <Link 
+                        to="/auth/forgot-password" 
+                        state={{ email: displayEmail, fromProfile: true }}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors hover:underline"
+                      >
+                        Quên mật khẩu hiện tại?
+                      </Link>
+                    )}
+                  </div>
                   <div className="relative">
                     <input
                       maxLength={50}

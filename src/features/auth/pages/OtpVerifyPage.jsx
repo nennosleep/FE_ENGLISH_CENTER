@@ -172,15 +172,22 @@ export default function OtpVerifyPage() {
       });
 
     } catch (err) {
-      const msg = err?.response?.data?.message?.toLowerCase() || '';
+      const originalMsg = err?.response?.data?.message;
+      const msg = originalMsg?.toLowerCase() || '';
       const status = err?.response?.status;
       let viMsg = 'Mã OTP không hợp lệ hoặc đã hết hạn.';
-      if (msg.includes('expired') || msg.includes('hết hạn')) viMsg = 'Mã OTP đã hết hạn. Vui lòng gửi lại mã mới.';
-      else if (msg.includes('invalid') || msg.includes('incorrect')) viMsg = 'Mã OTP không chính xác. Vui lòng kiểm tra lại.';
-      else if (msg.includes('not found')) viMsg = 'Không tìm thấy yêu cầu xác thực. Vui lòng thử lại từ đầu.';
-      else if (status === 429) viMsg = 'Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau.';
-      else if (status === 500) viMsg = 'Lỗi hệ thống. Vui lòng thử lại sau.';
-      else if (!err?.response) viMsg = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+
+      if (originalMsg && /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/.test(msg)) {
+        viMsg = originalMsg;
+      } else {
+        if (msg.includes('expired') || msg.includes('hết hạn')) viMsg = 'Mã OTP đã hết hạn. Vui lòng gửi lại mã mới.';
+        else if (msg.includes('invalid') || msg.includes('incorrect')) viMsg = 'Mã OTP không chính xác. Vui lòng kiểm tra lại.';
+        else if (msg.includes('not found')) viMsg = 'Không tìm thấy yêu cầu xác thực. Vui lòng thử lại từ đầu.';
+        else if (status === 429) viMsg = originalMsg || 'Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau.';
+        else if (status === 500) viMsg = 'Lỗi hệ thống. Vui lòng thử lại sau.';
+        else if (!err?.response) viMsg = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+        else viMsg = originalMsg || viMsg;
+      }
 
       toast.error(viMsg);
 

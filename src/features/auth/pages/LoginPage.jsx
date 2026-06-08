@@ -16,16 +16,27 @@ export default function LoginPage() {
 
   /* Dịch lỗi backend sang Tiếng Việt */
   const getViError = (err) => {
-    const msg = err?.response?.data?.message?.toLowerCase() || '';
+    const originalMsg = err?.response?.data?.message;
+    const msg = originalMsg?.toLowerCase() || '';
     const status = err?.response?.status;
+    
+    // Nếu là lỗi 429 (Quá nhiều request - Khóa tài khoản) thì lấy luôn thông báo chuẩn từ BE
+    if (status === 429 && originalMsg) return originalMsg;
+
     if (msg.includes('locked') || msg.includes('disabled')) return 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.';
     if (msg.includes('invalid') || msg.includes('bad credentials') || msg.includes('incorrect')) return 'Tên đăng nhập hoặc mật khẩu không đúng.';
     if (msg.includes('not found') || msg.includes('not exist')) return 'Tài khoản không tồn tại trong hệ thống.';
+    
+    // Nếu BE gửi lỗi trực tiếp bằng Tiếng Việt, hiển thị luôn thay vì fallback
+    if (/[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/.test(msg)) {
+      return originalMsg;
+    }
+
     if (status === 401) return 'Tên đăng nhập hoặc mật khẩu không đúng.';
     if (status === 403) return 'Tài khoản không có quyền truy cập.';
     if (status === 500) return 'Lỗi hệ thống. Vui lòng thử lại sau.';
     if (!err?.response) return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
-    return 'Tên đăng nhập hoặc mật khẩu không đúng.';
+    return originalMsg || 'Tên đăng nhập hoặc mật khẩu không đúng.';
   };
 
   const handleSubmit = async (e) => {

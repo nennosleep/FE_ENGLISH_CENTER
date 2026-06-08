@@ -111,8 +111,14 @@ export default function ResetPasswordPage() {
 
   /* Dịch lỗi Backend sang Tiếng Việt */
   const getViError = (err) => {
-    const msg = err?.response?.data?.message?.toLowerCase() || '';
+    const originalMsg = err?.response?.data?.message;
+    const msg = originalMsg?.toLowerCase() || '';
     const status = err?.response?.status;
+
+    if (originalMsg && /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/.test(msg)) {
+      return originalMsg;
+    }
+
     if (msg.includes('expired') || msg.includes('hết hạn')) return 'Phiên xác thực đã hết hạn. Vui lòng thực hiện lại từ đầu.';
     if (msg.includes('invalid') && msg.includes('otp')) return 'Mã OTP không hợp lệ. Vui lòng thực hiện lại.';
     if (msg.includes('weak') || msg.includes('password')) return 'Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.';
@@ -120,7 +126,7 @@ export default function ResetPasswordPage() {
     if (status === 400) return 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
     if (status === 500) return 'Lỗi hệ thống. Vui lòng thử lại sau.';
     if (!err?.response) return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
-    return 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.';
+    return originalMsg || 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.';
   };
 
   /* ───────────────────────────────────────────────── */

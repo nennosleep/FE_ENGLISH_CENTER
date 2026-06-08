@@ -84,6 +84,7 @@ export default function TeacherListPage() {
     isOpen: false,
     teacher: null,
     nextStatus: null,
+    pendingForm: null, // Lưu tạm dữ liệu Form nếu người dùng đổi trạng thái trong Modal Sửa
     title: '',
     message: '',
     confirmText: '',
@@ -158,7 +159,7 @@ export default function TeacherListPage() {
     // Lỗi quyền & xác thực
     if (status === 401) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
     if (status === 403) return 'Bạn không có quyền thực hiện thao tác này.';
-    if (status === 500) return 'Lỗi hệ thống phía máy chủ. Vui lòng thử lại sau.';
+    if (status === 500) return backendMessage || 'Lỗi hệ thống phía máy chủ. Vui lòng thử lại sau.';
     if (status === 409) return backendMessage || 'Dữ liệu bị xung đột. Có thể thông tin đã tồn tại trong hệ thống.';
     if (status === 404) return backendMessage || 'Không tìm thấy dữ liệu.';
     if (status === 400) return backendMessage || 'Dữ liệu không hợp lệ.';
@@ -171,6 +172,42 @@ export default function TeacherListPage() {
 
   /* ── Submit (Thêm/Sửa API) ── */
   const handleSubmit = async (form) => {
+    // KỊCH BẢN: Nếu đang sửa và phát hiện đổi trạng thái sang INACTIVE, RESIGNED, hoặc ON_LEAVE -> Mở Confirm Modal
+    if (editTarget && editTarget.status !== form.status && 
+        (form.status === 'INACTIVE' || form.status === 'RESIGNED' || form.status === 'ON_LEAVE')) {
+      const isResigned = form.status === 'RESIGNED';
+      const isOnLeave = form.status === 'ON_LEAVE';
+      
+      let title = 'Đình chỉ giảng viên';
+      let message = `Xác nhận đình chỉ giảng viên "${form.fullName}". Đồng thời tài khoản hệ thống của giảng viên này cũng sẽ bị khóa tạm thời. Bạn có chắc chắn?`;
+      
+      if (isResigned) {
+        title = 'Cho thôi việc giảng viên';
+        message = `Xác nhận chuyển "${form.fullName}" sang trạng thái đã thôi việc. Đồng thời tài khoản hệ thống của giảng viên này cũng sẽ bị khóa hoàn toàn. Bạn có chắc chắn?`;
+      } else if (isOnLeave) {
+        title = 'Xác nhận nghỉ phép';
+        message = `Xác nhận cấp phép nghỉ dài hạn cho giảng viên "${form.fullName}". Giảng viên vẫn có quyền đăng nhập hệ thống nhưng sẽ không được phân công lớp mới. Bạn có chắc chắn?`;
+      }
+
+      setConfirmConfig({
+        isOpen: true,
+        teacher: editTarget,
+        nextStatus: form.status,
+        pendingForm: form, // Bế nguyên cục data form này qua cho Modal Confirm xử lý
+        title,
+        message,
+        confirmText: 'Đồng ý',
+        type: isOnLeave ? 'warning' : 'danger',
+        isLoading: false
+      });
+      return; // Dừng luồng lưu bình thường lại
+    }
+
+    // LUỒNG BÌNH THƯỜNG (Thêm mới, hoặc Sửa không đụng tới trạng thái Khóa)
+    await processSubmit(form);
+  };
+
+  const processSubmit = async (form) => {
     setIsSubmitting(true);
     try {
       const payload = {
@@ -207,16 +244,15 @@ export default function TeacherListPage() {
   };
 
   const openStatusConfirm = (teacher, nextStatus) => {
-    const isResigned = nextStatus === 'RESIGNED';
+    // Hàm này giữ lại phòng hờ nếu sau này muốn xài lại nút bấm ngoài bảng
     setConfirmConfig({
       isOpen: true,
       teacher,
       nextStatus,
-      title: isResigned ? 'Cho thôi việc giảng viên' : 'Đình chỉ giảng viên',
-      message: isResigned
-        ? `Xác nhận chuyển "${teacher.fullName}" sang trạng thái đã thôi việc. Thao tác này giữ lại dữ liệu lịch sử.`
-        : `Xác nhận đình chỉ "${teacher.fullName}". Giảng viên sẽ không được xem là đang hoạt động.`,
-      confirmText: isResigned ? 'Cho thôi việc' : 'Đình chỉ',
+      pendingForm: null,
+      title: 'Xác nhận khóa tài khoản',
+      message: `Bạn có chắc chắn muốn KHÓA (Ngừng hoạt động) giảng viên ${teacher.fullName}? Dữ liệu lịch sử dạy học của giảng viên này vẫn sẽ được giữ lại.`,
+      confirmText: 'Đồng ý',
       type: 'danger',
       isLoading: false
     });
@@ -227,6 +263,7 @@ export default function TeacherListPage() {
       isOpen: false,
       teacher: null,
       nextStatus: null,
+      pendingForm: null,
       title: '',
       message: '',
       confirmText: '',
@@ -236,24 +273,52 @@ export default function TeacherListPage() {
   };
 
   const confirmStatusChange = async () => {
-    const { teacher, nextStatus } = confirmConfig;
+    const { teacher, nextStatus, pendingForm } = confirmConfig;
     if (!teacher?.id || !nextStatus) return;
 
     setConfirmConfig((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      await updateTeacherStatus(teacher.id, nextStatus);
-      setTeachers((prev) =>
-        prev.map((item) =>
-          item.id === teacher.id ? { ...item, status: nextStatus } : item
-        )
-      );
-      toast.success(
-        nextStatus === 'RESIGNED'
-          ? 'Đã chuyển giảng viên sang trạng thái thôi việc.'
-          : 'Đã đình chỉ giảng viên.'
-      );
-      closeStatusConfirm();
+      if (pendingForm) {
+        // NẾU CÓ pendingForm TỨC LÀ GỌI TỪ TRONG MODAL EDIT RA -> SUBMIT LUÔN CẢ FORM
+        const payload = {
+          fullName: pendingForm.fullName,
+          phone: pendingForm.phone || null,
+          email: pendingForm.email || null,
+          maxClasses: Number(pendingForm.maxClasses || 0),
+          maxHoursPerDay: Number(pendingForm.maxHoursPerDay || 0),
+          status: pendingForm.status,
+          specializationIds: pendingForm.specializationIds || []
+        };
+        await updateTeacher(teacher.id, payload);
+        
+        let successMsg = 'Cập nhật thành công. Tài khoản giảng viên đã bị KHÓA.';
+        if (nextStatus === 'RESIGNED') successMsg = 'Cập nhật thành công. Đã chuyển giảng viên sang trạng thái thôi việc.';
+        if (nextStatus === 'ON_LEAVE') successMsg = 'Cập nhật thành công. Giảng viên đã được chuyển sang chế độ Nghỉ phép.';
+        
+        toast.success(successMsg);
+        closeStatusConfirm(); // Tắt luôn Modal Confirm ngay lập tức
+        setModalOpen(false); // Tắt luôn cái Modal Edit ở dưới
+        const newTeachers = await getAllTeachers();
+        const sortedTeachers = (newTeachers || []).sort((a, b) => {
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        });
+        setTeachers(sortedTeachers);
+      } else {
+        // NẾU KHÔNG CÓ pendingForm (gọi từ đâu đó ngoài bảng)
+        await updateTeacherStatus(teacher.id, nextStatus);
+        toast.success(
+          nextStatus === 'RESIGNED'
+            ? 'Đã chuyển giảng viên sang trạng thái thôi việc.'
+            : 'Đã đình chỉ giảng viên.'
+        );
+        closeStatusConfirm(); // Tắt luôn Modal Confirm ngay lập tức
+        setTeachers((prev) =>
+          prev.map((item) =>
+            item.id === teacher.id ? { ...item, status: nextStatus } : item
+          )
+        );
+      }
     } catch (error) {
       toast.error(getVietnameseError(error, 'Lỗi khi cập nhật trạng thái giảng viên.'));
       setConfirmConfig((prev) => ({ ...prev, isLoading: false }));

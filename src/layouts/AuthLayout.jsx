@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../features/auth/context/AuthContext';
 
 /**
@@ -7,16 +7,16 @@ import { useAuthContext } from '../features/auth/context/AuthContext';
  */
 export default function AuthLayout() {
   const { user, isAuthenticated } = useAuthContext();
+  const location = useLocation();
 
-  // Nếu đã đăng nhập mà lại truy cập vào /auth/login hoặc / -> Chuyển thẳng vào đúng dashboard
-  if (isAuthenticated) {
+  // Nếu đã đăng nhập mà lại truy cập vào /auth/login hoặc /auth -> Chuyển thẳng vào đúng dashboard
+  if (isAuthenticated && (location.pathname === '/auth/login' || location.pathname === '/auth' || location.pathname === '/auth/')) {
     const roles = user?.roles || [];
     if (roles.some(r => r.includes('ACADEMIC_STAFF'))) {
       return <Navigate to="/admin" replace />;
     } else if (roles.some(r => r.includes('TEACHER'))) {
       return <Navigate to="/teacher" replace />;
     }
-    // Nếu không có role hợp lệ nhưng vẫn authenticated, cứ để họ ở login để tránh loop (hoặc xóa AuthContext nếu lỗi)
   }
 
   return (
