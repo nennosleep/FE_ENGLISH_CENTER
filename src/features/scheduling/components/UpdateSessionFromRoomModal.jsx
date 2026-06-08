@@ -25,11 +25,10 @@ import {
   getColleaguesByTeacherId
 } from '../../../services/teacherService';
 
-import { createNotificationForTeacher } from '../../../services/notificationService';
+import { toast } from 'react-hot-toast';
 import { useAuthContext } from '../../auth/context/AuthContext';
 
 export default function UpdateSessionFromRoomModal({ isOpen, onClose, payload, onSaveSuccess }) {
-  if (!isOpen || !payload?.existingSession) return null;
 
   const { user } = useAuthContext();
   const [substituteTeachers, setSubstituteTeachers] = useState([]);
@@ -39,7 +38,7 @@ export default function UpdateSessionFromRoomModal({ isOpen, onClose, payload, o
 const [availableRooms, setAvailableRooms] = useState([]);
 const [selectedRoomId, setSelectedRoomId] = useState('');
 
-  const session = payload.existingSession;
+  const session = payload?.existingSession || {};
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -139,17 +138,7 @@ const [selectedRoomId, setSelectedRoomId] = useState('');
         assignedBy: 'ADMIN_CURRENT',
       });
 
-      // TRIGGER 1: Bắn thông báo cho Giáo viên
-      try {
-        const className = session.className || session.classCode || 'một lớp học mới';
-        await createNotificationForTeacher(
-          teacherId, 
-          'Phân công lịch dạy mới', 
-          `Bạn vừa được phân công dạy lớp ${className} với vai trò ${role}. Vui lòng kiểm tra lịch.`
-        );
-      } catch (err) {
-        console.error('Không thể gửi thông báo cho GV', err);
-      }
+      // Gửi thông báo đã bị vô hiệu hóa tạm thời
 
       setTeacherId('');
       setTeacherName('');
@@ -214,9 +203,9 @@ const handleSaveRoomChange = async () => {
             isLocked: sessionDetail.isLocked
         });
         onSaveSuccess?.();
-        alert("Đổi phòng thành công!");
+        toast.success("Đổi phòng thành công!");
     } catch (err) {
-        alert("Không thể đổi phòng: " + (err.response?.data?.message || "Lỗi hệ thống"));
+        toast.error("Không thể đổi phòng: " + (err.response?.data?.message || "Lỗi hệ thống"));
     }
 };
 
@@ -245,11 +234,11 @@ const handleSaveBatchRoomChange = async () => {
             startDate: sessionDetail.sessionDate,
             newRoomId: selectedRoomId
         });
-        alert("Đã chuyển phòng thành công cho toàn bộ chuỗi lịch!");
+        toast.success("Đã chuyển phòng thành công cho toàn bộ chuỗi lịch!");
         onSaveSuccess?.();
         onClose();
     } catch (err) {
-        alert("Lỗi: " + (err.response?.data?.message || "Không thể chuyển hàng loạt"));
+        toast.error("Lỗi: " + (err.response?.data?.message || "Không thể chuyển hàng loạt"));
     }
 };
 
@@ -284,11 +273,13 @@ const loadAvailableTeachersForSubstitute = async () => {
   }
 };
 
- return (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
-    
-    <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] border border-slate-200">
+  if (!isOpen || !payload?.existingSession) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
+      
+      <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] border border-slate-200">
       
       {/* HEADER */}
       <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -424,7 +415,7 @@ const loadAvailableTeachersForSubstitute = async () => {
         ))}
       </select>
       <button 
-        onClick={() => alert("Chức năng thay thế đang được phát triển")}
+        onClick={() => toast.error("Chức năng thay thế đang được phát triển")}
         className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 rounded-xl text-sm transition"
       >
         Xác nhận thay thế

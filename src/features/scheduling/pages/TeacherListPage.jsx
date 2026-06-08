@@ -153,22 +153,20 @@ export default function TeacherListPage() {
   /* ── Hàm dịch lỗi Backend sang Tiếng Việt ── */
   const getVietnameseError = (error, defaultMsg) => {
     const backendMessage = error?.response?.data?.message;
-    if (backendMessage) {
-      return backendMessage;
-    }
-    
     const status = error?.response?.status;
     
     // Lỗi quyền & xác thực
     if (status === 401) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
     if (status === 403) return 'Bạn không có quyền thực hiện thao tác này.';
     if (status === 500) return 'Lỗi hệ thống phía máy chủ. Vui lòng thử lại sau.';
-    if (status === 409) return 'Dữ liệu bị xung đột. Có thể thông tin đã tồn tại trong hệ thống.';
+    if (status === 409) return backendMessage || 'Dữ liệu bị xung đột. Có thể thông tin đã tồn tại trong hệ thống.';
+    if (status === 404) return backendMessage || 'Không tìm thấy dữ liệu.';
+    if (status === 400) return backendMessage || 'Dữ liệu không hợp lệ.';
     
     // Lỗi mạng
     if (!error?.response) return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
     
-    return defaultMsg;
+    return backendMessage || defaultMsg;
   };
 
   /* ── Submit (Thêm/Sửa API) ── */
@@ -529,6 +527,33 @@ export default function TeacherListPage() {
                       >
                         <Pencil size={14} />
                       </button>
+                      {t.status === 'ACTIVE' && (
+                        <button
+                          onClick={() => openStatusConfirm(t, 'INACTIVE')}
+                          title="Đình chỉ"
+                          className="hover:text-amber-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
+                        >
+                          <Lock size={14} />
+                        </button>
+                      )}
+                      {t.status === 'INACTIVE' && (
+                        <button
+                          onClick={() => openStatusConfirm(t, 'ACTIVE')}
+                          title="Khôi phục"
+                          className="hover:text-indigo-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
+                        >
+                          <UserCheck size={14} />
+                        </button>
+                      )}
+                      {t.status !== 'RESIGNED' && (
+                        <button
+                          onClick={() => openStatusConfirm(t, 'RESIGNED')}
+                          title="Thôi việc"
+                          className="hover:text-rose-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
+                        >
+                          <UserX size={14} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

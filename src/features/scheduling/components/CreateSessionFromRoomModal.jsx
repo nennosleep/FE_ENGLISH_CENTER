@@ -25,7 +25,6 @@ export default function CreateSessionFromRoomModal({
   payload,
   onSaveSuccess,
 }) {
-  if (!isOpen || !payload) return null;
 
   const [classesList, setClassesList] =
     useState([]);
@@ -80,7 +79,7 @@ export default function CreateSessionFromRoomModal({
   useEffect(() => {
     if (
       !selectedClassId ||
-      !payload.date ||
+      !payload?.date ||
       classesList.length === 0
     ) {
       return;
@@ -101,7 +100,7 @@ export default function CreateSessionFromRoomModal({
         selectedClass.endDate;
 
       const targetDate =
-        new Date(payload.date);
+        new Date(payload?.date);
 
       targetDate.setHours(
         0,
@@ -155,7 +154,7 @@ export default function CreateSessionFromRoomModal({
   }, [
     selectedClassId,
     classesList,
-    payload.date,
+    payload?.date,
   ]);
 
   // CREATE SESSION
@@ -176,7 +175,7 @@ export default function CreateSessionFromRoomModal({
 
       try {
         let cleanDate =
-          payload.date?.trim();
+          payload?.date?.trim();
 
         if (
           cleanDate?.includes('T')
@@ -190,10 +189,10 @@ export default function CreateSessionFromRoomModal({
             selectedClassId,
 
           roomId:
-            payload.roomId,
+            payload?.roomId,
 
           timeSlotId:
-            payload.slotId,
+            payload?.slotId,
 
           sessionDate:
             cleanDate,
@@ -246,6 +245,8 @@ export default function CreateSessionFromRoomModal({
       ? `${parts[2]}/${parts[1]}/${parts[0]}`
       : dateStr;
   };
+
+  if (!isOpen || !payload) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">

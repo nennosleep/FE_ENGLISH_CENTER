@@ -238,8 +238,9 @@ export default function TeacherFormModal({
           return;
         }
       } catch (err) {
-        console.warn("Bỏ qua kiểm tra phân công do lỗi từ hệ thống khác (CORS/403):", err);
-        // Không block save, cho phép tiếp tục vì user đã dặn
+        console.error("Lỗi khi kiểm tra phân công giảng viên:", err);
+        toast.error("Không thể kiểm tra dữ liệu phân công giảng viên. Vui lòng thử lại sau.");
+        return;
       } finally {
         setIsChecking(false);
       }
