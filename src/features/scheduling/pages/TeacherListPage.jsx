@@ -527,33 +527,6 @@ export default function TeacherListPage() {
                       >
                         <Pencil size={14} />
                       </button>
-                      {t.status === 'ACTIVE' && (
-                        <button
-                          onClick={() => openStatusConfirm(t, 'INACTIVE')}
-                          title="Đình chỉ"
-                          className="hover:text-amber-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
-                        >
-                          <Lock size={14} />
-                        </button>
-                      )}
-                      {t.status === 'INACTIVE' && (
-                        <button
-                          onClick={() => openStatusConfirm(t, 'ACTIVE')}
-                          title="Khôi phục"
-                          className="hover:text-indigo-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
-                        >
-                          <UserCheck size={14} />
-                        </button>
-                      )}
-                      {t.status !== 'RESIGNED' && (
-                        <button
-                          onClick={() => openStatusConfirm(t, 'RESIGNED')}
-                          title="Thôi việc"
-                          className="hover:text-rose-600 transition p-1 bg-white border border-slate-200 rounded shadow-sm hover:shadow"
-                        >
-                          <UserX size={14} />
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
