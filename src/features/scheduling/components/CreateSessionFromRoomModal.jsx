@@ -61,20 +61,23 @@ export default function CreateSessionFromRoomModal({
     fetchAvailableClasses();
   }, []);
 
-  const fetchAvailableClasses =
-    async () => {
-      try {
-        const res =
-          await getClassScheduleStatus();
+ const fetchAvailableClasses = async () => {
+  try {
+    const res = await getClassScheduleStatus(); // Gọi API mới
+    
+    // Giả sử API trả về cấu trúc: { data: { readyToSchedule: [], notConfigured: [], assignedClasses: [] } }
+    // Lưu ý: Tùy vào cách bạn đóng gói ApiResponse ở Backend (có bọc trong 'data' hay không)
+    const data = res?.data || res; 
 
-        const unassigned =
-          res?.unassignedClasses || [];
-
-        setClassesList(unassigned);
-      } catch (err) {
-        console.error(err);
-      }
-    };
+    // Bạn muốn Modal này lấy danh sách "đã có khung lịch nhưng chưa có session"
+    // để người dùng chọn.
+    const availableForScheduling = data?.readyToSchedule || [];
+    
+    setClassesList(availableForScheduling);
+  } catch (err) {
+    console.error("Lỗi lấy danh sách lớp:", err);
+  }
+};
 
   // VALIDATE DATE
   useEffect(() => {
@@ -147,6 +150,24 @@ export default function CreateSessionFromRoomModal({
 
         return;
       }
+      // Thêm vào sau đoạn check endStr trong useEffect của bạn
+if (selectedClass && selectedClass.scheduleDescription) {
+    const targetDate = new Date(payload.date);
+    const dayOfWeek = targetDate.getDay(); // 0 là CN, 1 là T2...
+    
+    // Giả sử scheduleDescription có dạng: "Thứ 2, Thứ 4, Thứ 6"
+    // Ta kiểm tra xem chuỗi có chứa ngày vừa chọn không
+    const dayNames = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+    const currentDayName = dayNames[dayOfWeek];
+    
+    if (!selectedClass.scheduleDescription.includes(currentDayName)) {
+        setDateValidationWarning(
+            `Ngày này (${currentDayName}) không nằm trong lịch học của lớp: ${selectedClass.scheduleDescription}`
+        );
+        setIsDateInvalid(true);
+        return;
+    }
+}
     }
 
     setDateValidationWarning('');
@@ -344,47 +365,29 @@ export default function CreateSessionFromRoomModal({
                 Chọn lớp:
               </label>
 
-              <select
-                value={
-                  selectedClassId
-                }
-                onChange={(e) =>
-                  setSelectedClassId(
-                    e.target.value
-                  )
-                }
-                disabled={
-                  classesList.length ===
-                    0 ||
-                  isSubmitting
-                }
-                className="w-full px-3 py-2.5 border bg-slate-50 border-slate-200 rounded-xl text-sm font-semibold"
-              >
-                <option value="">
-                  -- Chọn lớp --
-                </option>
+                  <select
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+              className="w-full px-3 py-2.5 border bg-slate-50 border-slate-200 rounded-xl text-sm font-semibold"
+            >
+              <option value="">-- Chọn lớp sẵn sàng xếp lịch --</option>
+              
+              {/* Nhóm lớp sẵn sàng (Ready) */}
+              <optgroup label="Sẵn sàng xếp lịch">
+           {classesList.map((c) => (
+  <option key={c.id || c.classId} value={c.id || c.classId}>
+    {c.classCode} ({c.courseNameSnapshot || c.courseName}) 
+    {c.scheduleDescription ? ` - [${c.scheduleDescription}]` : ''}
+  </option>
+))}
+              </optgroup>
 
-                {classesList.map(
-                  (c) => (
-                    <option
-                      key={
-                        c.id ||
-                        c.classId
-                      }
-                      value={
-                        c.id ||
-                        c.classId
-                      }
-                    >
-                      {c.classCode}{' '}
-                      (
-                      {c.courseNameSnapshot ||
-                        c.courseName}
-                      )
-                    </option>
-                  )
-                )}
-              </select>
+              {/* Gợi ý thêm: Bạn có thể hiển thị thông báo nếu không có lớp nào */}
+              {classesList.length === 0 && (
+                <option disabled>Không có lớp nào khả dụng</option>
+              )}
+            </select>
+
             </div>
 
             {/* BULK */}
