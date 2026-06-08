@@ -291,11 +291,6 @@ export default function TeacherAssignmentTab({ onAssignSuccess }) {
 
       console.error(error);
 
-      setAssignMessage({
-        type: 'error',
-        text:
-          'Phân công thành công nhưng lỗi đồng bộ lịch!'
-      });
 
     } finally {
 
