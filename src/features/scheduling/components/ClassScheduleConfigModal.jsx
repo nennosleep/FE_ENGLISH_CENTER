@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Save } from 'lucide-react';
 // Thay vì import { getAvailableClasses } ...
 import { getClassesWithoutSchedule } from '../../../services/classService';
+import { getClassScheduleStatus } from '../../../services/classService';
 // 🚀 Tích hợp các service chuyên biệt mới về cấu hình lịch lặp lại
 import { getClassSchedulePattern, saveClassSchedulePattern } from '../../../services/scheduleService';
 
@@ -22,20 +23,39 @@ const daysConfig = [
 ];
 
   // 1. Tải danh sách lớp học khả dụng khi mở Modal
+const [classData, setClassData] = useState({ 
+  readyToSchedule: [], 
+  notConfigured: [], 
+  assignedClasses: [] 
+});
+
 useEffect(() => {
-    if (isOpen) {
-      const loadInitialData = async () => {
-        try {
-          // Gọi service mới thay cho getAvailableClasses
-          const cls = await getClassesWithoutSchedule();
-          setClassesList(cls || []);
-        } catch (err) {
-          console.error("Lỗi tải danh sách lớp chưa có lịch:", err);
+  if (isOpen) {
+    const loadData = async () => {
+      try {
+        const res = await getClassScheduleStatus();
+        
+        // LOG ĐỂ XEM CẤU TRÚC THẬT SỰ
+        console.log("Full response từ API:", res);
+
+        // Giả định nếu 'res' là ApiResponse, data nằm ở res.data
+        // Nếu res trả về trực tiếp là object JSON bạn gửi, thì res.data là undefined
+        const responseData = res?.data || res; 
+        
+        if (responseData) {
+          setClassData({
+            readyToSchedule: responseData.readyToSchedule || [],
+            notConfigured: responseData.notConfigured || [],
+            assignedClasses: responseData.assignedClasses || []
+          });
         }
-      };
-      loadInitialData();
-    }
-  }, [isOpen]);
+      } catch (err) {
+        console.error("Lỗi tải danh sách lớp:", err);
+      }
+    };
+    loadData();
+  }
+}, [isOpen]);
 
   // 2. 🌟 BỔ SUNG: Tự động điền trước các Thứ đã lưu trong database khi chọn Lớp học
   useEffect(() => {
@@ -104,9 +124,15 @@ useEffect(() => {
   if (!isOpen) return null;
 
   return (
+    
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        
+        {/* ĐOẠN NÀY DÙNG ĐỂ DEBUG - BẠN SẼ THẤY NÓ TRÊN GIAO DIỆN */}
+<div className="p-2 text-[10px] text-gray-500 bg-gray-100 rounded">
+  Debug: Chưa cấu hình ({classData.notConfigured.length}) | 
+  Sẵn sàng ({classData.readyToSchedule.length}) | 
+  Đã gán ({classData.assignedClasses.length})
+</div>
         {/* Header */}
         <div className="p-4 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between">
           <div className="flex items-center gap-2 text-indigo-600">
@@ -123,16 +149,36 @@ useEffect(() => {
           {/* Lớp học */}
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Chọn Lớp học:</label>
-            <select 
-              value={selectedClassId} 
-              onChange={e => setSelectedClassId(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
-            >
-              <option value="">-- Chọn lớp học --</option>
-              {classesList.map(c => (
-                <option key={c.id} value={c.id}>{c.classCode} {c.name ? `- ${c.name}` : ''}</option>
-              ))}
-            </select>
+   <select 
+  value={selectedClassId} 
+  onChange={e => setSelectedClassId(e.target.value)}
+  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+>
+  <option value="">-- Chọn lớp học --</option>
+  
+  {/* Nhóm Cần cấu hình: Cho phép chọn */}
+  <optgroup label=" Cần cấu hình lịch">
+    {classData.notConfigured.map(c => (
+      <option key={c.id} value={c.id}>{c.classCode}</option>
+    ))}
+  </optgroup>
+
+  {/* Nhóm Đã có khung lịch: Cho phép chọn để cập nhật */}
+  <optgroup label="Đã có khung lịch (Có thể cập nhật)">
+    {classData.readyToSchedule.map(c => (
+      <option key={c.id} value={c.id}>{c.classCode} ({c.scheduleDescription})</option>
+    ))}
+  </optgroup>
+
+  {/* Nhóm Đã có buổi học: KHÔNG Cho phép chọn (disabled) */}
+  <optgroup label=" Đã có buổi học (Không thể thay đổi)">
+    {classData.assignedClasses.map(c => (
+      <option key={c.id} value={c.id} disabled>
+        {c.classCode}
+      </option>
+    ))}
+  </optgroup>
+</select>
           </div>
 
           {/* Các thứ lặp lại */}
