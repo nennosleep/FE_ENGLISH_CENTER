@@ -60,10 +60,12 @@ export function AuthProvider({ children }) {
     const otherStorage = rememberMe ? sessionStorage : localStorage;
 
     storage.setItem('token', loginData.accessToken);
+    storage.setItem('refreshToken', loginData.refreshToken);
     storage.setItem(STORAGE_KEY, JSON.stringify(userData));
     
     // Xóa storage còn lại để tránh xung đột
     otherStorage.removeItem('token');
+    otherStorage.removeItem('refreshToken');
     otherStorage.removeItem(STORAGE_KEY);
 
     setUser(userData);
@@ -72,8 +74,10 @@ export function AuthProvider({ children }) {
   // Đăng xuất: xóa tất cả khỏi storage và reset state
   const clearUser = useCallback(() => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem('token');
+    sessionStorage.removeItem('refreshToken');
     sessionStorage.removeItem(STORAGE_KEY);
     setUser(null);
   }, []);
@@ -111,11 +115,13 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
-  const updateToken = useCallback((newToken) => {
+  const updateToken = useCallback((newToken, newRefreshToken) => {
     if (localStorage.getItem('token')) {
       localStorage.setItem('token', newToken);
+      if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
     } else if (sessionStorage.getItem('token')) {
       sessionStorage.setItem('token', newToken);
+      if (newRefreshToken) sessionStorage.setItem('refreshToken', newRefreshToken);
     }
   }, []);
 
