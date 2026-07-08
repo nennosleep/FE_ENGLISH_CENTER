@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuthContext } from '../features/auth/context/AuthContext';
+import { useAuthContext } from '../features/auth';
 
 /**
  * AuthLayout — Khung bố cục cho tất cả các trang xác thực.
@@ -13,9 +13,11 @@ export default function AuthLayout() {
   if (isAuthenticated && (location.pathname === '/auth/login' || location.pathname === '/auth' || location.pathname === '/auth/')) {
     const roles = user?.roles || [];
     if (roles.some(r => r.includes('ACADEMIC_STAFF'))) {
-      return <Navigate to="/admin" replace />;
+      return <Navigate to="/academic" replace />;
     } else if (roles.some(r => r.includes('TEACHER'))) {
       return <Navigate to="/teacher" replace />;
+    } else if (roles.some(r => r.includes('CONSULTANT') || r.includes('TEAM_LEAD'))) {
+      return <Navigate to="/crm" replace />;
     }
   }
 

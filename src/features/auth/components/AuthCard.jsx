@@ -2,13 +2,13 @@ import React from 'react';
 import { BookOpen } from 'lucide-react';
 
 /**
- * AuthCard — khung card chung dùng lại cho mọi trang Auth
+ * authCard — khung card chung dùng lại cho mọi trang Auth
  * Props:
  *  - title: string        — tiêu đề form
  *  - subtitle: string     — mô tả nhỏ bên dưới logo
  *  - children: ReactNode  — nội dung form
  */
-export default function AuthCard({ title, subtitle, children }) {
+export default function authCard({ title, subtitle, children }) {
   return (
     <div className="relative z-10 bg-white rounded-2xl w-full max-w-[440px] px-9 pt-10 pb-8 shadow-[0_20px_60px_rgba(26,61,189,0.25),0_4px_16px_rgba(0,0,0,0.08)] animate-[cardIn_0.45s_cubic-bezier(0.22,1,0.36,1)_both]"
       style={{ animation: 'cardIn 0.45s cubic-bezier(0.22,1,0.36,1) both' }}

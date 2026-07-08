@@ -10,18 +10,18 @@ import {
   Settings,
 } from 'lucide-react';
 
-import CreateSessionFromRoomModal from '../../scheduling/components/CreateSessionFromRoomModal';
-import UpdateSessionFromRoomModal from '../../scheduling/components/UpdateSessionFromRoomModal';
-import ClassScheduleConfigModal from '../../scheduling/components/ClassScheduleConfigModal';
-import TeacherAssignmentTab from '../../scheduling/components/TeacherAssignmentTab';
+import CreateSessionFromRoomModal from '../components/createSessionFromRoomModal';
+import UpdateSessionFromRoomModal from '../components/updateSessionFromRoomModal';
+import ClassScheduleConfigModal from '../components/classScheduleConfigModal';
+import TeacherAssignmentTab from '../components/teacherAssignmentTab';
 
-import { getTimeSlots } from '../../../services/timeSlotService';
+import { getTimeSlots } from '../services/timeSlotService';
 import {
   getActiveRooms,
   getRoomUtilization,
-} from '../../../services/roomService';
+} from '../services/roomService';
 
-import { getTeachersBySessionId } from '../../../services/sessionTeacherService';
+import { getTeachersBySessionId } from '../services/sessionTeacherService';
 
 const EMPTY_UTILIZATION = {
   roomId: null,

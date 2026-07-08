@@ -13,10 +13,10 @@ import {
   BookOpen,
 } from 'lucide-react';
 
-import TeacherFormModal from '../components/TeacherFormModal';
-import ConfirmModal from '../../../components/ui/ConfirmModal';
-import Pagination from '../../../components/ui/Pagination';
-import { useToast } from '../../../components/ui/Toast';
+import TeacherFormModal from '../components/teacherFormModal';
+import ConfirmModal from '../../../components/ui/confirmModal';
+import Pagination from '../../../components/ui/pagination';
+import { useToast } from '../../../components/ui/toast';
 import usePagination from '../../../hooks/usePagination';
 
 import {
@@ -24,9 +24,9 @@ import {
   createTeacher,
   updateTeacher,
   updateTeacherStatus
-} from '../../../services/teacherService';
+} from '../../teachers';
 
-import { getSpecializations } from '../../../services/specializationService';
+import { getSpecializations } from '../services/specializationService';
 
 /* ─── Status badge (Cập nhật theo API thật) ──────────────── */
 function StatusBadge({ status }) {

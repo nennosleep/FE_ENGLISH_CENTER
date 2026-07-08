@@ -4,16 +4,16 @@
  */
 
 // Pages
-export { default as LoginPage }          from './pages/LoginPage';
-export { default as ForgotPasswordPage } from './pages/ForgotPasswordPage';
-export { default as OtpVerifyPage }      from './pages/OtpVerifyPage';
-export { default as ResetPasswordPage }  from './pages/ResetPasswordPage';
+export { default as LoginPage }          from './pages/loginPage';
+export { default as ForgotPasswordPage } from './pages/forgotPasswordPage';
+export { default as OtpVerifyPage }      from './pages/otpVerifyPage';
+export { default as ResetPasswordPage }  from './pages/resetPasswordPage';
 
 // Components
-export { default as PrivateRoute }       from './components/PrivateRoute';
+export { default as PrivateRoute }       from './components/privateRoute';
 
 // Context
-export { AuthProvider, useAuthContext }  from './context/AuthContext';
+export { AuthProvider, useAuthContext }  from './context/authContext';
 
 // Hooks
 export { useAuth } from './hooks/useAuth';
@@ -24,5 +24,9 @@ export {
   forgotPasswordApi,
   verifyOtpApi,
   resetPasswordApi,
+  changePasswordApi,
 } from './services/authService';
 
+export {
+  updateAccount,
+} from './services/accountService';

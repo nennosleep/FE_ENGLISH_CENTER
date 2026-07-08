@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Lock, User, Loader2 } from 'lucide-react';
-import AuthCard from '../components/AuthCard';
+import authCard from '../components/authCard';
 import { useAuth } from '../hooks/useAuth';
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../../components/ui/toast';
 
 export default function LoginPage() {
   const { login, isLoading } = useAuth();
@@ -68,7 +68,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthCard title="Đăng nhập" subtitle="Hệ thống quản lý trung tâm tiếng Anh">
+    <authCard title="Đăng nhập" subtitle="Hệ thống quản lý trung tâm tiếng Anh">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
 
         {/* Username */}
@@ -160,6 +160,6 @@ export default function LoginPage() {
         </button>
 
       </form>
-    </AuthCard>
+    </authCard>
   );
 }

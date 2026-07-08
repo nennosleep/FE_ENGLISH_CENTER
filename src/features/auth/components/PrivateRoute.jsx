@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuthContext } from '../context/AuthContext';
+import { useAuthContext } from '../context/authContext';
 import { getHomeRouteByRoles } from '../../../utils/roleUtils';
 
 export default function PrivateRoute({ children, requiredRole }) {

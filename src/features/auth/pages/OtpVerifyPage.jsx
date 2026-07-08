@@ -8,14 +8,14 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-import AuthCard from '../components/AuthCard';
+import authCard from '../components/authCard';
 
 import {
   verifyOtpApi,
   forgotPasswordApi,
 } from '../services/authService';
 
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../../components/ui/toast';
 
 /* ───────────────────────────────────────────────────── */
 
@@ -241,7 +241,7 @@ export default function OtpVerifyPage() {
   /* ───────────────────────────────────────────────── */
 
   return (
-    <AuthCard
+    <authCard
       title="Nhập mã xác thực"
       subtitle="Hệ thống quản lý trung tâm tiếng Anh"
     >
@@ -484,6 +484,6 @@ export default function OtpVerifyPage() {
         </Link>
 
       </form>
-    </AuthCard>
+    </authCard>
   );
 }

@@ -16,13 +16,13 @@ import {
   createCourse,
   updateCourse,
   deleteCourse,
-} from "../../../services/courseService";
+} from "../services/courseService";
 
-import { getSpecializationLevels } from "../../../services/specializationLevelService";
+import { getSpecializationLevels } from "../services/specializationLevelService";
 
-import { getSpecializations } from "../../../services/specializationService";
+import { getSpecializations } from "../services/specializationService";
 
-import CourseFormModal from "../components/CourseFormModal";
+import CourseFormModal from "../components/courseFormModal";
 
 export default function CourseListPage() {
   const [courses, setCourses] = useState([]);

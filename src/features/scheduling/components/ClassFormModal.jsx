@@ -11,7 +11,7 @@ import {
 import {
   createClass,
   updateClass
-} from '../../../services/classService';
+} from '../services/classService';
 
 /* ==========================================================
    HÀM TỰ ĐỘNG SINH MÃ LỚP HỌC

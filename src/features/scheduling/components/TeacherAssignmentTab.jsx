@@ -6,25 +6,25 @@ import {
   getClassesWithoutTeacher,
   getCourseByClassId,
   getAllClasses
-} from '../../../services/classService';
+} from '../services/classService';
 
 import {
   getTeachersByCourse,
   getAllTeachers
-} from '../../../services/teacherService';
+} from '../../teachers';
 
 
 import {
   getAvailableTeachersForClass
-} from '../../../services/sessionTeacherService';
+} from '../services/sessionTeacherService';
 
 
 import {
   createAssignment,
   getAllAssignments
-} from '../../../services/teacherAssignmentService';
+} from '../../teachers';
 
-import { syncSessionTeacherAssignment } from '../../../services/sessionTeacherService';
+import { syncSessionTeacherAssignment } from '../services/sessionTeacherService';
 
 export default function TeacherAssignmentTab({ onAssignSuccess }) {
 

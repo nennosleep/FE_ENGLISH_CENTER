@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, CalendarDays, ClipboardList, User, LogOut, History } from 'lucide-react';
-import { useAuthContext } from '../features/auth/context/AuthContext';
-import ConfirmModal from '../components/ui/ConfirmModal';
+import { useAuthContext } from '../features/auth';
+import ConfirmModal from '../components/ui/confirmModal';
 
 export default function TeacherLayout() {
   const navigate = useNavigate();

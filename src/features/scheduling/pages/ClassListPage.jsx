@@ -11,14 +11,14 @@ import {
 } from 'lucide-react';
 
 // Import services
-import { getCourses } from '../../../services/courseService';
+import { getCourses } from '../services/courseService';
 import { 
   getAvailableClasses, 
   getClassScheduleStatus 
-} from '../../../services/classService';
+} from '../services/classService';
 
 // Import component Modal mới bóc tách
-import ClassFormModal from '../../scheduling/components/ClassFormModal';
+import ClassFormModal from '../components/classFormModal';
 
 export default function ClassListPage() {
   // --- STATES QUẢN LÝ DANH SÁCH & BỘ LỌC ---

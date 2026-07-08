@@ -45,10 +45,13 @@ export const getHomeRouteByRoles = (userRoles) => {
   if (!userRoles || !Array.isArray(userRoles)) return '/auth/login';
   
   if (checkHasRole(userRoles, 'ACADEMIC_STAFF')) {
-    return '/admin';
+    return '/academic';
   }
   if (checkHasRole(userRoles, 'TEACHER')) {
     return '/teacher/dashboard';
+  }
+  if (checkHasRole(userRoles, ['CONSULTANT', 'TEAM_LEAD'])) {
+    return '/crm';
   }
   
   return '/auth/login';

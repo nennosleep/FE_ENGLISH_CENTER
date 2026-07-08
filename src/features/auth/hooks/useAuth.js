@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loginApi } from '../services/authService';
-import { useAuthContext } from '../context/AuthContext';
+import { useAuthContext } from '../context/authContext';
 
 /**
  * Custom hook xử lý luồng đăng nhập.
  *
  * - Gọi BE POST /api/auth/login
- * - Lưu token + user info vào AuthContext (và localStorage)
+ * - Lưu token + user info vào authContext (và localStorage)
  * - Sau login, redirect về trang user đang cố vào (state.from) hoặc /admin/courses
  * - Nếu lỗi sẽ re-throw để component gọi tự hiển thị toast
  */

@@ -1,7 +1,7 @@
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
-import router from './routes/routers';
-import { ToastProvider } from './components/ui/Toast';
+import router from './routes/router';
+import { ToastProvider } from './components/ui/toast';
 import { AuthProvider } from './features/auth';
 function App() {
   return (

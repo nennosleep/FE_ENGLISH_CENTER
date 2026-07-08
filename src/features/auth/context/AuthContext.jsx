@@ -3,14 +3,14 @@ import { checkHasRole } from '../../../utils/roleUtils';
 import { isTokenValid } from '../../../utils/jwtUtils';
 
 /**
- * AuthContext — Quản lý trạng thái đăng nhập toàn cục.
+ * authContext — Quản lý trạng thái đăng nhập toàn cục.
  *
  * Lưu thông tin user (username, email, roles, accountId) vào:
  *   - state (in-memory, dùng trong app)
  *   - localStorage (persist qua refresh)
  */
 
-const AuthContext = createContext(null);
+const authContext = createContext(null);
 
 const STORAGE_KEY = 'auth_user';
 
@@ -126,15 +126,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, saveUser, clearUser, hasRole, updateUser, updateToken }}>
+    <authContext.Provider value={{ user, isAuthenticated, saveUser, clearUser, hasRole, updateUser, updateToken }}>
       {children}
-    </AuthContext.Provider>
+    </authContext.Provider>
   );
 }
 
 // Custom hook để dùng context
 export function useAuthContext() {
-  const ctx = useContext(AuthContext);
+  const ctx = useContext(authContext);
   if (!ctx) throw new Error('useAuthContext must be used inside <AuthProvider>');
   return ctx;
 }

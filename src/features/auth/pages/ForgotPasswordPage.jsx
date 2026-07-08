@@ -7,9 +7,9 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-import AuthCard from '../components/AuthCard';
+import authCard from '../components/authCard';
 import { forgotPasswordApi } from '../services/authService';
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../../components/ui/toast';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthCard
+    <authCard
       title="Quên mật khẩu"
       subtitle="Hệ thống quản lý trung tâm tiếng Anh"
     >
@@ -265,6 +265,6 @@ export default function ForgotPasswordPage() {
 
         </form>
       )}
-    </AuthCard>
+    </authCard>
   );
 }

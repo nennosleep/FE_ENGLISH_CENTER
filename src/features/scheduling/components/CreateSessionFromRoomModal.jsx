@@ -12,12 +12,12 @@ import {
   CalendarClock,
 } from 'lucide-react';
 
-import { getClassScheduleStatus } from '../../../services/classService';
+import { getClassScheduleStatus } from '../services/classService';
 
 import {
   createSession,
   createBulkSession,
-} from '../../../services/sessionService';
+} from '../services/sessionService';
 
 export default function CreateSessionFromRoomModal({
   isOpen,

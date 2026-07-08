@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, GraduationCap, UserCheck, SlidersHorizontal, Loader2, Calendar } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { useAuthContext } from '../../auth/context/AuthContext';
-import { getCourses } from '../../../services/courseService';
-import { getAllClasses, getClassScheduleStatus } from '../../../services/classService';
-import { getAllTeachers } from '../../../services/teacherService';
-import { getRooms } from '../../../services/roomService';
+import { useAuthContext } from '../../auth';
+import { getCourses } from '../services/courseService';
+import { getAllClasses, getClassScheduleStatus } from '../services/classService';
+import { getAllTeachers } from '../../teachers';
+import { getRooms } from '../services/roomService';
 
 export default function AdminDashboardPage() {
   const { user } = useAuthContext();

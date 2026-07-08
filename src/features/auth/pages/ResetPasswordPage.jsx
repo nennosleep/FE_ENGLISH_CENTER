@@ -10,11 +10,11 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-import AuthCard from '../components/AuthCard';
+import authCard from '../components/authCard';
 
 import { resetPasswordApi } from '../services/authService';
 
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../../components/ui/toast';
 
 /* ───────────────────────────────────────────────────── */
 
@@ -202,7 +202,7 @@ export default function ResetPasswordPage() {
   /* ───────────────────────────────────────────────── */
 
   return (
-    <AuthCard
+    <authCard
       title="Đặt lại mật khẩu"
       subtitle="Hệ thống quản lý trung tâm tiếng Anh"
     >
@@ -614,6 +614,6 @@ export default function ResetPasswordPage() {
 
         </form>
       )}
-    </AuthCard>
+    </authCard>
   );
 }

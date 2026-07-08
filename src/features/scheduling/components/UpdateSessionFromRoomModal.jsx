@@ -7,26 +7,26 @@ import {
   deleteSessionTeacher,
   getAvailableColleaguesForSession,
   getAvailableTeachersForSubstitute
-} from '../../../services/sessionTeacherService';
+} from '../services/sessionTeacherService';
 
 
 import {
   getSessionById,
   updateSession,
   batchUpdateRoomForSessions
-} from '../../../services/sessionService'; 
+} from '../services/sessionService'; 
 
 import {
   getAvailableRoomsForSession,
   getAvailableRoomsForBatchUpdateSessions
-} from '../../../services/roomService';
+} from '../services/roomService';
 
 import {
   getColleaguesByTeacherId
-} from '../../../services/teacherService';
+} from '../../teachers';
 
 import { toast } from 'react-hot-toast';
-import { useAuthContext } from '../../auth/context/AuthContext';
+import { useAuthContext } from '../../auth';
 
 export default function UpdateSessionFromRoomModal({ isOpen, onClose, payload, onSaveSuccess }) {
 

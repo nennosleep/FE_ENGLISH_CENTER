@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Loader2, Home, Users, Save, RotateCcw, AlertTriangle } from 'lucide-react';
-import { useToast } from '../../../components/ui/Toast'; 
-import { createRoom, updateRoom, markRoomAsMaintenance } from '../../../services/roomService';
+import { useToast } from '../../../components/ui/toast'; 
+import { createRoom, updateRoom, markRoomAsMaintenance } from '../services/roomService';
 const INITIAL_FORM = {
   roomCode: '',
   name: '',

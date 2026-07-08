@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../../components/ui/toast';
 import {
   Search,
   Plus,
@@ -9,7 +9,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import SpecializationFormModal from "../components/SpecializationFormModal";
+import SpecializationFormModal from "../components/specializationFormModal";
 
 /* =========================
    SERVICES
@@ -17,12 +17,12 @@ import SpecializationFormModal from "../components/SpecializationFormModal";
 import {
   getSpecializations,
   deleteSpecialization,
-} from "../../../services/specializationService";
+} from "../services/specializationService";
 
 import {
   getSpecializationLevels,
   deleteSpecializationLevel,
-} from "../../../services/specializationLevelService";
+} from "../services/specializationLevelService";
 
 /* =========================
    PAGE

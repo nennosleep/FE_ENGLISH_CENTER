@@ -10,9 +10,9 @@ import {
   Users,
   Pencil
 } from 'lucide-react';
-import { getRooms } from '../../../services/roomService';
-import RoomFormModal from '../components/RoomFormModal';
-import RoomDeleteFormModal from '../components/RoomDeleteFormModal';
+import { getRooms } from '../services/roomService';
+import RoomFormModal from '../components/roomFormModal';
+import RoomDeleteFormModal from '../components/roomDeleteFormModal';
 
 export default function RoomListPage() {
   const [rooms, setRooms] = useState([]);

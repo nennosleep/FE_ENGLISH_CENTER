@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Save } from 'lucide-react';
 // Thay vì import { getAvailableClasses } ...
-import { getClassesWithoutSchedule } from '../../../services/classService';
-import { getClassScheduleStatus } from '../../../services/classService';
+import { getClassesWithoutSchedule } from '../services/classService';
+import { getClassScheduleStatus } from '../services/classService';
 // 🚀 Tích hợp các service chuyên biệt mới về cấu hình lịch lặp lại
-import { getClassSchedulePattern, saveClassSchedulePattern } from '../../../services/scheduleService';
+import { getClassSchedulePattern, saveClassSchedulePattern } from '../services/scheduleService';
 
 export default function ClassScheduleConfigModal({ isOpen, onClose, onSaveSuccess }) {
   const [classesList, setClassesList] = useState([]);

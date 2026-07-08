@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { BookOpen, Save, Users, Loader2, RotateCcw } from "lucide-react";
 
-import { getCourses } from "../../../services/courseService";
-import { createClass, getAvailableClasses } from "../../../services/classService";
+import { getCourses } from "../services/courseService";
+import { createClass, getAvailableClasses } from "../services/classService";
 
 /* ==========================================================
    AUTO GENERATE CLASS CODE
