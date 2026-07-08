@@ -1,4 +1,4 @@
-import leadAxios from '../../../config/leadAxios';
+import leadAxios from '../../../core/api/leadApi';
 
 let mockInteractions = [
   {

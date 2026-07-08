@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Save, BookOpen, Mail, User, Lock, Shield, Eye, EyeOff, Edit2, X, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAuthContext, updateAccount, changePasswordApi } from "../../../features/auth";
+import { useAuthContext } from "../../../core/auth";
+import { updateAccount, changePasswordApi } from "../../../features/auth";
 import { getTeacherById, updateTeacher } from "../services/teacherService";
-import { useToast } from "../../../components/ui/toast";
+import { useToast } from "../../../core/components";
 
 export default function TeacherProfilePage() {
   const { user, updateUser, updateToken } = useAuthContext();

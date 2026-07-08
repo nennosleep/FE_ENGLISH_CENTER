@@ -7,26 +7,22 @@ import {
   useLocation,
 } from "react-router-dom";
 
-// Auth
+// ── Core: Auth ────────────────────────────────────────────────────────────────
+import { AuthProvider, PrivateRoute, useAuthContext } from "../core/auth";
+import { useToast } from "../core/components";
+
+// ── Core: Layouts (1 role = 1 layout) ────────────────────────────────────────
+import { AcademicLayout, AuthLayout, TeacherLayout, CrmLayout } from "../core/layouts";
+
+// ── Feature: Auth pages ───────────────────────────────────────────────────────
 import {
-  AuthProvider,
-  PrivateRoute,
   LoginPage,
   ForgotPasswordPage,
   OtpVerifyPage,
   ResetPasswordPage,
-  useAuthContext,
 } from "../features/auth";
 
-import { useToast } from "../components/ui/toast";
-
-// Layouts
-import AcademicLayout from "../layouts/academicLayout";
-import AuthLayout from "../layouts/authLayout";
-import TeacherLayout from "../layouts/teacherLayout";
-import CrmLayout from "../layouts/crmLayout";
-
-// Scheduling pages
+// ── Feature: Scheduling (Academic Staff) ─────────────────────────────────────
 import {
   CourseListPage,
   ClassListPage,
@@ -37,7 +33,7 @@ import {
   AdminDashboardPage,
 } from "../features/scheduling";
 
-// Teacher pages
+// ── Feature: Teachers (Teacher portal) ───────────────────────────────────────
 import {
   TeacherDashboardPage,
   TeacherSchedulePage,
@@ -45,25 +41,28 @@ import {
   TeacherProfilePage,
 } from "../features/teachers";
 
-// CRM pages (Leads, Students, Enrollment, Tuition)
+// ── Feature: CRM — Leads (LeadService) ───────────────────────────────────────
 import {
   LeadDashboardPage,
   LeadListPage,
   LeadDetailPage,
 } from "../features/leads";
 
+// ── Feature: CRM — Students (StudentService) ─────────────────────────────────
 import {
   StudentDashboardPage,
   StudentListPage,
   StudentDetailPage,
 } from "../features/students";
 
+// ── Feature: CRM — Enrollment (EnrollmentService) ────────────────────────────
 import {
   EnrollmentDashboardPage,
   EnrollmentListPage,
   ClassCapacityPage,
 } from "../features/enrollment";
 
+// ── Feature: CRM — Tuition (TuitionService) ──────────────────────────────────
 import {
   TuitionDashboardPage,
   TuitionListPage,
@@ -71,51 +70,32 @@ import {
   OverdueReportPage,
 } from "../features/tuition";
 
-
 /**
- * Lắng nghe sự kiện 401 (hết hạn token)
+ * GlobalAuthListener — Lắng nghe sự kiện 401 (hết hạn token).
+ * Đặt trong RootLayout để bao phủ toàn bộ ứng dụng.
  */
 function GlobalAuthListener() {
   const { clearUser } = useAuthContext();
-
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
 
   useEffect(() => {
     const handleUnauthorized = () => {
-      // Xóa token + user info
       clearUser();
-
-      toast.warning(
-        "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."
-      );
-
-      // Redirect về login
-      navigate("/auth/login", {
-        replace: true,
-        state: { from: location },
-      });
+      toast.warning("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.");
+      navigate("/auth/login", { replace: true, state: { from: location } });
     };
 
-    window.addEventListener(
-      "auth:unauthorized",
-      handleUnauthorized
-    );
-
-    return () => {
-      window.removeEventListener(
-        "auth:unauthorized",
-        handleUnauthorized
-      );
-    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
   }, [clearUser, navigate, location, toast]);
 
   return null;
 }
 
 /**
- * Root wrapper
+ * RootLayout — Bọc toàn bộ app với AuthProvider + GlobalAuthListener.
  */
 function RootLayout() {
   return (
@@ -127,122 +107,66 @@ function RootLayout() {
 }
 
 /**
- * Redirect dựa trên Role của người dùng
+ * RoleBasedRedirect — Tự động điều hướng về trang chủ đúng với role.
  */
 function RoleBasedRedirect() {
   const { user, isAuthenticated } = useAuthContext();
   if (!isAuthenticated) return <Navigate to="/auth/login" replace />;
-  
+
   const roles = user?.roles || [];
-  if (roles.some(r => r.includes('ACADEMIC_STAFF'))) {
-    return <Navigate to="/academic" replace />;
-  } else if (roles.some(r => r.includes('TEACHER'))) {
-    return <Navigate to="/teacher/dashboard" replace />;
-  } else if (roles.some(r => r.includes('CONSULTANT') || r.includes('TEAM_LEAD'))) {
-    return <Navigate to="/crm" replace />;
-  }
+  if (roles.some(r => r.includes("ACADEMIC_STAFF"))) return <Navigate to="/academic" replace />;
+  if (roles.some(r => r.includes("TEACHER"))) return <Navigate to="/teacher/dashboard" replace />;
+  if (roles.some(r => r.includes("CONSULTANT") || r.includes("TEAM_LEAD"))) return <Navigate to="/crm" replace />;
   return <Navigate to="/auth/login" replace />;
 }
 
 const router = createBrowserRouter([
   {
-    // Root layout
     element: <RootLayout />,
-
     children: [
-      // "/" -> Điều hướng theo role
-      {
-        path: "/",
-        element: <RoleBasedRedirect />,
-      },
 
-      // =========================================
-      // AUTH ROUTES
-      // =========================================
+      // "/" → Điều hướng theo role
+      { path: "/", element: <RoleBasedRedirect /> },
+
+      // ══════════════════════════════════════════════════════════════════════
+      // AUTH ROUTES  —  /auth/*
+      // ══════════════════════════════════════════════════════════════════════
       {
         path: "/auth",
         element: <AuthLayout />,
-
         children: [
-          {
-            index: true,
-            element: <Navigate to="login" replace />,
-          },
-
-          {
-            path: "login",
-            element: <LoginPage />,
-          },
-
-          {
-            path: "forgot-password",
-            element: <ForgotPasswordPage />,
-          },
-
-          {
-            path: "verify-otp",
-            element: <OtpVerifyPage />,
-          },
-
-          {
-            path: "reset-password",
-            element: <ResetPasswordPage />,
-          },
+          { index: true, element: <Navigate to="login" replace /> },
+          { path: "login",           element: <LoginPage /> },
+          { path: "forgot-password", element: <ForgotPasswordPage /> },
+          { path: "verify-otp",      element: <OtpVerifyPage /> },
+          { path: "reset-password",  element: <ResetPasswordPage /> },
         ],
       },
 
-      // =========================================
-      // ACADEMIC STAFF ROUTES
-      // =========================================
+      // ══════════════════════════════════════════════════════════════════════
+      // ACADEMIC STAFF ROUTES  —  /academic/*  (SchedulingService)
+      // ══════════════════════════════════════════════════════════════════════
       {
         path: "/academic",
-
         element: (
           <PrivateRoute requiredRole={["ROLE_ACADEMIC_STAFF"]}>
             <AcademicLayout />
           </PrivateRoute>
         ),
-
         children: [
-          {
-            index: true,
-            element: <AdminDashboardPage />,
-          },
-
-          {
-            path: "courses",
-            element: <CourseListPage />,
-          },
-
-          {
-            path: "classes",
-            element: <ClassListPage />,
-          },
-
-
-          {
-            path: "scheduler",
-            element: <CalendarSchedulerPage />,
-          },
-          {
-            path: "rooms",
-            element: <RoomListPage />,
-          },
-          {
-            path: "specializations",
-            element: <SpecializationListPage />,
-          },
-
-          {
-            path: "teachers",
-            element: <TeacherListPage />,
-          },
+          { index: true,              element: <AdminDashboardPage /> },
+          { path: "courses",          element: <CourseListPage /> },
+          { path: "classes",          element: <ClassListPage /> },
+          { path: "scheduler",        element: <CalendarSchedulerPage /> },
+          { path: "rooms",            element: <RoomListPage /> },
+          { path: "specializations",  element: <SpecializationListPage /> },
+          { path: "teachers",         element: <TeacherListPage /> },
         ],
       },
 
-      // =========================================
-      // TEACHER ROUTES
-      // =========================================
+      // ══════════════════════════════════════════════════════════════════════
+      // TEACHER ROUTES  —  /teacher/*  (SchedulingService)
+      // ══════════════════════════════════════════════════════════════════════
       {
         path: "/teacher",
         element: (
@@ -251,32 +175,17 @@ const router = createBrowserRouter([
           </PrivateRoute>
         ),
         children: [
-          {
-            index: true,
-            element: <Navigate to="dashboard" replace />,
-          },
-          {
-            path: "dashboard",
-            element: <TeacherDashboardPage />,
-          },
-          {
-            path: "schedule",
-            element: <TeacherSchedulePage />,
-          },
-          {
-            path: "assignments",
-            element: <TeacherAssignmentPage />,
-          },
-          {
-            path: "profile",
-            element: <TeacherProfilePage />,
-          },
+          { index: true,          element: <Navigate to="dashboard" replace /> },
+          { path: "dashboard",    element: <TeacherDashboardPage /> },
+          { path: "schedule",     element: <TeacherSchedulePage /> },
+          { path: "assignments",  element: <TeacherAssignmentPage /> },
+          { path: "profile",      element: <TeacherProfilePage /> },
         ],
       },
 
-      // =========================================
-      // CRM ROUTES (Lead, Student, Enrollment, Tuition)
-      // =========================================
+      // ══════════════════════════════════════════════════════════════════════
+      // CRM ROUTES  —  /crm/*  (Lead, Student, Enrollment, Tuition)
+      // ══════════════════════════════════════════════════════════════════════
       {
         path: "/crm",
         element: (
@@ -285,50 +194,26 @@ const router = createBrowserRouter([
           </PrivateRoute>
         ),
         children: [
-          {
-            index: true,
-            element: <LeadDashboardPage />,
-          },
-          {
-            path: "leads",
-            element: <LeadListPage />,
-          },
-          {
-            path: "leads/:id",
-            element: <LeadDetailPage />,
-          },
-          {
-            path: "students",
-            element: <StudentListPage />,
-          },
-          {
-            path: "students/:id",
-            element: <StudentDetailPage />,
-          },
-          {
-            path: "enrollments",
-            element: <EnrollmentListPage />,
-          },
-          {
-            path: "enrollments/capacity",
-            element: <ClassCapacityPage />,
-          },
-          {
-            path: "tuition",
-            element: <TuitionListPage />,
-          },
-          {
-            path: "tuition/:id",
-            element: <InvoiceDetailPage />,
-          },
-          {
-            path: "tuition/dashboard",
-            element: <TuitionDashboardPage />,
-          },
-          {
-            path: "tuition/overdue",
-            element: <OverdueReportPage />,
-          },
+          // Dashboard mặc định → Leads
+          { index: true, element: <LeadDashboardPage /> },
+
+          // ── LeadService ──────────────────────────────────────────────────
+          { path: "leads",              element: <LeadListPage /> },
+          { path: "leads/:id",          element: <LeadDetailPage /> },
+
+          // ── StudentService ───────────────────────────────────────────────
+          { path: "students",           element: <StudentListPage /> },
+          { path: "students/:id",       element: <StudentDetailPage /> },
+
+          // ── EnrollmentService ────────────────────────────────────────────
+          { path: "enrollments",          element: <EnrollmentListPage /> },
+          { path: "enrollments/capacity", element: <ClassCapacityPage /> },
+
+          // ── TuitionService ───────────────────────────────────────────────
+          { path: "tuition",            element: <TuitionListPage /> },
+          { path: "tuition/dashboard",  element: <TuitionDashboardPage /> },
+          { path: "tuition/overdue",    element: <OverdueReportPage /> },
+          { path: "tuition/:id",        element: <InvoiceDetailPage /> },
         ],
       },
     ],

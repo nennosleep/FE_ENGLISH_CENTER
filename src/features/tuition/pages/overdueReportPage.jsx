@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { runOverdueCronJobSimulation } from '../services/tuitionService';
 import { ArrowLeft, Play, Award, CheckCircle, Database, Loader2, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function OverdueReportPage() {
   const [running, setRunning] = useState(false);

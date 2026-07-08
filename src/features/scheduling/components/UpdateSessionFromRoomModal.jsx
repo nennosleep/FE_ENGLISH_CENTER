@@ -26,7 +26,7 @@ import {
 } from '../../teachers';
 
 import { toast } from 'react-hot-toast';
-import { useAuthContext } from '../../auth';
+import { useAuthContext } from '../../../core/auth';
 
 export default function UpdateSessionFromRoomModal({ isOpen, onClose, payload, onSaveSuccess }) {
 

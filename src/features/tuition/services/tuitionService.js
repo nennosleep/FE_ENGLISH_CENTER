@@ -1,4 +1,4 @@
-import tuitionAxios from '../../../config/tuitionAxios';
+import tuitionAxios from '../../../core/api/tuitionApi';
 
 // Mock data for Invoices
 let mockInvoices = [

@@ -4,7 +4,7 @@ import { getLeadById, updateLead, convertLeadToAdmitted } from '../services/lead
 import LeadStatusBadge from '../components/leadStatusBadge';
 import LeadInteractionLog from '../components/leadInteractionLog';
 import { ChevronLeft, User, Phone, Mail, Calendar, Compass, FileText, CheckCircle, HelpCircle, Loader2 } from 'lucide-react';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function LeadDetailPage() {
   const { id } = useParams();

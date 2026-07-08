@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuthContext } from '../context/authContext';
-import { getHomeRouteByRoles } from '../../../utils/roleUtils';
+import { useAuthContext } from '../../core/auth';
+import { getHomeRouteByRoles } from '../../../core/utils';
 
 export default function PrivateRoute({ children, requiredRole }) {
   const { user, isAuthenticated, hasRole } = useAuthContext();

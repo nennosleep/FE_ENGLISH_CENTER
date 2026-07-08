@@ -4,7 +4,7 @@ import OverdueWarningBadge from '../components/overdueWarningBadge';
 import PaymentFormModal from '../components/paymentFormModal';
 import { Search, CreditCard, Eye, Calendar, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function TuitionListPage() {
   const [invoices, setInvoices] = useState([]);

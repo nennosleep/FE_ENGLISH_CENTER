@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getStudents } from '../services/studentService';
 import StudentCard from '../components/studentCard';
 import { Search, Grid, List, Loader2 } from 'lucide-react';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function StudentListPage() {
   const [students, setStudents] = useState([]);

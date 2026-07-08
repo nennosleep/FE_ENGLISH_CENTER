@@ -1,4 +1,4 @@
-import enrollmentAxios from '../../../config/enrollmentAxios';
+import enrollmentAxios from '../../../core/api/enrollmentApi';
 
 // Mock data for Class Capacities and Enrollments
 let mockClasses = [

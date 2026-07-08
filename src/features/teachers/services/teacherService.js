@@ -1,4 +1,4 @@
-import identityAxios from '../../../config/identityAxios';
+import identityAxios from '../../../core/api/identityApi';
 
 export const getAllTeachers = async () => {
   const response = await identityAxios.get('/teachers');

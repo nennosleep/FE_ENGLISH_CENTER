@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loginApi } from '../services/authService';
-import { useAuthContext } from '../context/authContext';
+import { useAuthContext } from '../../../core/auth';
 
 /**
  * Custom hook xử lý luồng đăng nhập.

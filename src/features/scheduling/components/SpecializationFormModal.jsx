@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, FileText, Code, ArrowUpDown } from "lucide-react";
-import { useToast } from '../../../components/ui/toast'; // Đường dẫn tới hook Toast của bạn
+import { useToast } from '../../../core/components'; // Đường dẫn tới hook Toast của bạn
 export const useNotification = () => {
   const toast = useToast();
   return {

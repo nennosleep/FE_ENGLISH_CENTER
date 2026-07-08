@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { checkHasRole } from '../../../utils/roleUtils';
-import { isTokenValid } from '../../../utils/jwtUtils';
+import { checkHasRole } from '../../../core/utils';
+import { isTokenValid } from '../../../core/utils';
 
 /**
  * authContext — Quản lý trạng thái đăng nhập toàn cục.

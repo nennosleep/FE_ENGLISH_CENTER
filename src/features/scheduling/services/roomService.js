@@ -1,4 +1,4 @@
-import schedulingAxios from '../../../config/schedulingAxios'; 
+import schedulingAxios from '../../../core/api/schedulingApi'; 
 
 /**
  * Lấy danh sách toàn bộ phòng học (Đổ vào bảng quản lý tổng quan)

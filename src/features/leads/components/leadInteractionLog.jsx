@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getInteractionsByLeadId, createInteraction } from '../services/interactionService';
 import { MessageSquare, Phone, Send, Loader2, Calendar } from 'lucide-react';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function LeadInteractionLog({ leadId }) {
   const [interactions, setInteractions] = useState([]);

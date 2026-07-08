@@ -14,10 +14,8 @@ import {
 } from 'lucide-react';
 
 import TeacherFormModal from '../components/teacherFormModal';
-import ConfirmModal from '../../../components/ui/confirmModal';
-import Pagination from '../../../components/ui/pagination';
-import { useToast } from '../../../components/ui/toast';
-import usePagination from '../../../hooks/usePagination';
+import { ConfirmModal, Pagination, useToast } from '../../../core/components';
+import { usePagination } from '../../../core/hooks';
 
 import {
   getAllTeachers,

@@ -1,4 +1,4 @@
-import schedulingAxios from '../../../config/schedulingAxios';
+import schedulingAxios from '../../../core/api/schedulingApi';
 
 export const getAllClasses = async () => {
   const response = await schedulingAxios.get('/classes');

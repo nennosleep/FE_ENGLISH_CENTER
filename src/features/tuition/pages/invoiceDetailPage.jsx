@@ -4,7 +4,7 @@ import { getInvoiceById, makePayment } from '../services/tuitionService';
 import OverdueWarningBadge from '../components/overdueWarningBadge';
 import PaymentFormModal from '../components/paymentFormModal';
 import { ChevronLeft, User, Calendar, CreditCard, DollarSign, Loader2 } from 'lucide-react';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams();

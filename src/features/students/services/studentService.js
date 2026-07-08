@@ -1,4 +1,4 @@
-import studentAxios from '../../../config/studentAxios';
+import studentAxios from '../../../core/api/studentApi';
 
 // Mock data for Students
 let mockStudents = [

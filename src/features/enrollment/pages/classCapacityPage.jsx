@@ -3,7 +3,7 @@ import { getClassesWithCapacity } from '../services/enrollmentService';
 import CapacityProgressBar from '../components/capacityProgressBar';
 import { LayoutGrid, AlertCircle, Play, CheckCircle, XCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function ClassCapacityPage() {
   const [classes, setClasses] = useState([]);

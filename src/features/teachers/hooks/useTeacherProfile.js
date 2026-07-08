@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuthContext } from '../../auth';
+import { useAuthContext } from '../../../core/auth';
 import { getTeacherById } from '../services/teacherService';
 
 /**

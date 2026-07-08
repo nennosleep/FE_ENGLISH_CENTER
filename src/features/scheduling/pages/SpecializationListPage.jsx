@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 import {
   Search,
   Plus,

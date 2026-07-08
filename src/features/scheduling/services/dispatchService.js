@@ -1,4 +1,4 @@
-import schedulingAxios from '../../../config/schedulingAxios'; 
+import schedulingAxios from '../../../core/api/schedulingApi'; 
 
 /**
  * 🚀 BỔ SUNG 1: Lấy danh sách giáo viên TRỐNG LỊCH hoàn toàn vào một ca cụ thể

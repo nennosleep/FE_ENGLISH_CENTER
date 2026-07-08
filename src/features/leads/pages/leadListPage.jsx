@@ -4,7 +4,7 @@ import LeadStatusBadge from '../components/leadStatusBadge';
 import LeadFormModal from '../components/leadFormModal';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Eye, Edit2, Trash2, PhoneCall, Calendar } from 'lucide-react';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function LeadListPage() {
   const [leads, setLeads] = useState([]);

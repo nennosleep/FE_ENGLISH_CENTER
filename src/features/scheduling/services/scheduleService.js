@@ -1,4 +1,4 @@
-import schedulingAxios from '../../../config/schedulingAxios';
+import schedulingAxios from '../../../core/api/schedulingApi';
 
 /**
  * Lấy lịch học (Sessions) thực tế của một phòng học cụ thể

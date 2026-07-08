@@ -1,4 +1,4 @@
-import schedulingAxios from '../../../config/schedulingAxios';
+import schedulingAxios from '../../../core/api/schedulingApi';
 
 /**
  * Đồng bộ hóa phân công cho lớp học (Sync)

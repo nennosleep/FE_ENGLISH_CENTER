@@ -1,4 +1,4 @@
-import identityAxios from '../../../config/identityAxios';
+import identityAxios from '../../../core/api/identityApi';
 
 /**
  * Gán chuyên môn cho giảng viên (Assign Specialization)

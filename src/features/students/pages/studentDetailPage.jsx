@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getStudentById, updateStudent } from '../services/studentService';
 import StudentStatusBadge from '../components/studentStatusBadge';
 import { ChevronLeft, User, Phone, Mail, Calendar, BookOpen, AlertCircle, Loader2, Save } from 'lucide-react';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function StudentDetailPage() {
   const { id } = useParams();

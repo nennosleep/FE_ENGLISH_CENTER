@@ -1,4 +1,4 @@
-import schedulingAxios from '../../../config/schedulingAxios';
+import schedulingAxios from '../../../core/api/schedulingApi';
 
 /**
  * Lấy cấu hình các ca học cố định (Thay cho slotsConfig)

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, BookOpen, Users, Bell, ArrowRight, Loader2, Calendar } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { useAuthContext } from '../../../features/auth';
+import { useAuthContext } from '../../../core/auth';
 import { getTeacherById } from '../services/teacherService';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function TeacherDashboardPage() {
   const { user } = useAuthContext();

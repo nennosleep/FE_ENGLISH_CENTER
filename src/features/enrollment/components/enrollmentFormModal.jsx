@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2, Save } from 'lucide-react';
 import { getClassesWithCapacity } from '../services/enrollmentService';
 import { getStudents } from '../../students/services/studentService';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function EnrollmentFormModal({ isOpen, onClose, onSaveSuccess }) {
   const [classes, setClasses] = useState([]);

@@ -15,7 +15,7 @@ import {
   forgotPasswordApi,
 } from '../services/authService';
 
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 /* ───────────────────────────────────────────────────── */
 

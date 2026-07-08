@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Lock, User, Loader2 } from 'lucide-react';
 import authCard from '../components/authCard';
 import { useAuth } from '../hooks/useAuth';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function LoginPage() {
   const { login, isLoading } = useAuth();

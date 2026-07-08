@@ -1,4 +1,4 @@
-import schedulingAxios from '../../../config/schedulingAxios';
+import schedulingAxios from '../../../core/api/schedulingApi';
 
 /**
  * Lấy danh sách tất cả phân công giáo viên

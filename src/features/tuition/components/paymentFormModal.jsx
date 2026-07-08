@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, CreditCard } from 'lucide-react';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function PaymentFormModal({ isOpen, onClose, invoice, onPaymentSuccess }) {
   const [amount, setAmount] = useState('');

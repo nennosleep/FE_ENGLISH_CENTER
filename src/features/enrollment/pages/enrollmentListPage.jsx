@@ -4,7 +4,7 @@ import EnrollmentStatusBadge from '../components/enrollmentStatusBadge';
 import EnrollmentFormModal from '../components/enrollmentFormModal';
 import { Plus, Search, Trash2, Calendar, LayoutGrid, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useToast } from '../../../components/ui/toast';
+import { useToast } from '../../../core/components';
 
 export default function EnrollmentListPage() {
   const [enrollments, setEnrollments] = useState([]);
